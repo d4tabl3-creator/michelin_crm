@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="format-detection" content="telephone=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#001f66">
+<title>Michelin CRM · Grimaldi</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23003399'/><text y='70' x='10' font-size='60' font-family='Arial' font-weight='bold' fill='%23FDE000'>M</text></svg>">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,800;1,800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--blue:#003399;--blue-dark:#001f66;--blue-mid:#0044cc;--yellow:#FDE000;--yellow-dark:#e5c900;--red:#e53935;--green:#00c853;--green-wa:#25D366;--bg:#0b0f1a;--surface:#141927;--surface2:#1c2438;--surface3:#232d45;--border:rgba(255,255,255,0.07);--text:#f0f2f8;--text-dim:#8892aa;--text-muted:#505870;--radius:16px;--radius-sm:10px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;-webkit-font-smoothing:antialiased;-webkit-overflow-scrolling:touch}
+
+/* LOGIN */
+#login-screen{position:fixed;inset:0;z-index:99999;background:var(--blue-dark);display:flex;flex-direction:column;justify-content:center;align-items:center;overflow:hidden}
+.login-bg{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.login-bg::before{content:'';position:absolute;width:600px;height:600px;background:radial-gradient(circle,rgba(253,224,0,.12) 0%,transparent 70%);top:-200px;right:-200px;border-radius:50%}
+.login-bg::after{content:'';position:absolute;width:400px;height:400px;background:radial-gradient(circle,rgba(0,68,204,.3) 0%,transparent 70%);bottom:-100px;left:-100px;border-radius:50%}
+.login-logo{font-family:'Barlow Condensed',sans-serif;font-style:italic;font-weight:800;font-size:3.5rem;color:white;line-height:1;text-align:center;z-index:1}
+.login-logo span{color:var(--yellow)}
+.login-sub{color:rgba(255,255,255,.5);font-size:.75rem;letter-spacing:3px;text-transform:uppercase;margin-top:4px;margin-bottom:36px;z-index:1}
+.pin-track{display:flex;gap:14px;margin-bottom:32px;z-index:1}
+.pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.3);transition:all .2s}
+.pin-dot.filled{background:var(--yellow);border-color:var(--yellow);transform:scale(1.1);box-shadow:0 0 10px rgba(253,224,0,.5)}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;z-index:1;width:260px}
+.num-btn{height:72px;border-radius:14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);color:white;font-size:1.6rem;font-weight:500;cursor:pointer;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:all .1s;user-select:none;-webkit-user-select:none;touch-action:manipulation;-webkit-tap-highlight-color:rgba(253,224,0,0.3);-webkit-touch-callout:none}
+.num-btn sub{font-size:.5rem;letter-spacing:1.5px;color:rgba(255,255,255,.4);line-height:1}
+.num-btn:active{background:rgba(253,224,0,.2);border-color:var(--yellow);transform:scale(.95)}
+.num-btn.del{font-size:1.1rem;color:rgba(255,255,255,.5)}
+.num-btn.del:active{background:rgba(229,57,53,.2);border-color:var(--red)}
+.pin-error{color:#ff6b6b;font-size:.8rem;margin-top:14px;z-index:1;opacity:0;transition:opacity .3s;height:20px}
+.pin-error.show{opacity:1}
+
+/* APP */
+#app-container{display:none;height:100vh;flex-direction:column}
+
+/* HEADER */
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:52px 20px 14px;display:flex;justify-content:space-between;align-items:flex-end;flex-shrink:0;position:relative}
+.header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--yellow),var(--yellow-dark))}
+.header-brand{font-family:'Barlow Condensed',sans-serif;font-style:italic}
+.header-brand h1{font-size:1.4rem;font-weight:800;color:white;letter-spacing:-.5px}
+.header-brand small{font-size:.7rem;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase}
+.role-chip{display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);padding:5px 10px;border-radius:20px;font-size:.7rem;font-weight:600;color:var(--text-dim)}
+.role-dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 0;scrollbar-width:none}
+.content::-webkit-scrollbar{display:none}
+
+/* VIEWS */
+.view{display:none;padding-bottom:100px}
+.view.active{display:block;animation:fadeUp .25s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.card-header{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.card-icon{width:32px;height:32px;border-radius:8px;background:rgba(0,51,153,.4);border:1px solid rgba(0,68,204,.3);display:flex;align-items:center;justify-content:center;font-size:.85rem;color:var(--yellow)}
+.card-title{font-weight:700;font-size:.9rem;color:var(--text)}
+
+/* FIELDS */
+.field{margin-bottom:10px}
+.field label{display:block;font-size:.7rem;font-weight:600;color:var(--text-dim);margin-bottom:5px;text-transform:uppercase;letter-spacing:.8px}
+.field input,.field select,.field textarea{width:100%;padding:11px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'Barlow',sans-serif;font-size:.95rem;-webkit-appearance:none;appearance:none;transition:border-color .2s}
+.field input:focus,.field select:focus{outline:none;border-color:var(--blue-mid);box-shadow:0 0 0 3px rgba(0,68,204,.2)}
+.field select option{background:var(--surface2);color:var(--text)}
+.row-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* SEARCH */
+.search-wrap{position:relative;margin-bottom:12px}
+.search-wrap i{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:.9rem;pointer-events:none}
+.search-input{width:100%;padding:11px 14px 11px 38px;background:var(--surface);border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:'Barlow',sans-serif;font-size:.95rem;-webkit-appearance:none}
+.search-input:focus{outline:none;border-color:var(--blue-mid)}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 8px;text-align:center}
+.stat-num{font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:700;color:white;line-height:1}
+.stat-label{font-size:.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.stat-card.acc{border-color:rgba(253,224,0,.3);background:rgba(253,224,0,.05)}
+.stat-card.acc .stat-num{color:var(--yellow)}
+.stat-card.grn .stat-num{color:var(--green)}
+
+/* FILTERS */
+.filter-scroll{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;margin-bottom:12px}
+.filter-scroll::-webkit-scrollbar{display:none}
+.filter-pill{flex-shrink:0;padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:.72rem;font-weight:600;color:var(--text-dim);cursor:pointer;white-space:nowrap;transition:all .15s}
+.filter-pill.active{background:var(--blue);border-color:var(--blue-mid);color:white}
+
+/* CLIENT LIST */
+.client-item{display:flex;align-items:center;gap:12px;padding:11px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;cursor:pointer;transition:all .15s}
+.client-item:active{background:var(--surface2);transform:scale(.99)}
+.client-avatar{width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.1rem;color:white;flex-shrink:0}
+.client-info{flex:1;min-width:0}
+.c-name{font-weight:600;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.c-detail{font-size:.73rem;color:var(--text-dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.client-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.bal-badge{font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:6px;background:rgba(0,200,83,.15);color:var(--green);border:1px solid rgba(0,200,83,.2)}
+.bal-badge.zero{background:rgba(255,255,255,.05);color:var(--text-muted);border-color:transparent}
+.suc-tag{font-size:.62rem;font-weight:600;padding:2px 6px;border-radius:5px;background:rgba(0,51,153,.25);color:rgba(100,140,255,.9);border:1px solid rgba(0,51,153,.3);max-width:80px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* DETAIL */
+.client-detail-header{display:flex;align-items:center;gap:14px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px}
+.big-avatar{width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,var(--blue-dark),var(--blue-mid));display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.4rem;color:white;flex-shrink:0}
+.client-detail-info h2{font-size:.95rem;font-weight:700;color:var(--text)}
+.client-detail-info p{font-size:.78rem;color:var(--text-dim);margin-top:2px}
+.bal-display{margin-left:auto;text-align:right}
+.bal-display .bal-num{font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:700;color:var(--yellow)}
+.bal-display .bal-lbl{font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
+
+/* BUTTONS */
+.btn{width:100%;padding:13px;border-radius:12px;border:none;font-weight:700;font-size:.92rem;cursor:pointer;display:flex;justify-content:center;align-items:center;gap:8px;transition:all .15s;font-family:'Barlow',sans-serif}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--blue-mid);color:white}
+.btn-wa{background:var(--green-wa);color:white}
+.btn-yellow{background:var(--yellow);color:var(--blue-dark)}
+.btn-ghost{background:var(--surface2);border:1px solid var(--border);color:var(--text-dim)}
+.btn-red{background:rgba(229,57,53,.15);border:1px solid rgba(229,57,53,.3);color:#ff6b6b}
+.btn-sm{padding:8px 14px;font-size:.8rem;width:auto;border-radius:8px}
+.btn-row{display:flex;gap:8px;margin-top:10px}
+.btn-row .btn{flex:1}
+
+/* MESSAGE PREVIEW */
+.msg-box{background:#1a2e1a;border:1px solid rgba(37,211,102,.2);border-radius:12px;padding:14px;font-size:.84rem;line-height:1.65;color:#d4f5dc;white-space:pre-wrap;font-family:'Barlow',sans-serif;position:relative;min-height:80px;margin-bottom:12px}
+.msg-box::before{content:'';position:absolute;top:10px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--green-wa);box-shadow:0 0 6px var(--green-wa)}
+
+/* QUOTE */
+.quote-result{background:linear-gradient(135deg,rgba(0,51,153,.3),rgba(0,68,204,.1));border:1px solid rgba(0,68,204,.3);border-radius:var(--radius-sm);padding:16px;margin:12px 0;display:none}
+.quote-price{font-family:'Barlow Condensed',sans-serif;font-size:2.6rem;font-weight:800;color:var(--yellow);line-height:1}
+.quote-desc{font-size:.84rem;color:var(--text-dim);margin-top:4px}
+.q-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.65rem;font-weight:700;text-transform:uppercase;background:rgba(253,224,0,.15);color:var(--yellow);margin-top:6px;border:1px solid rgba(253,224,0,.2)}
+
+/* SERVICES GRID */
+.svc-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;transition:all .15s}
+.svc-card:active{background:var(--surface2);transform:scale(.99)}
+.svc-name{font-size:.84rem;font-weight:600;color:var(--text)}
+.svc-code{font-size:.67rem;color:var(--text-muted);margin-top:2px}
+.svc-price{font-family:'Barlow Condensed',sans-serif;font-size:1.25rem;font-weight:700;color:var(--yellow);flex-shrink:0;text-align:right}
+.svc-cat{font-size:.62rem;color:var(--text-muted)}
+
+/* CATEGORY FILTER */
+.cat-tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-bottom:10px}
+.cat-tabs::-webkit-scrollbar{display:none}
+.cat-tab{flex-shrink:0;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);font-size:.7rem;font-weight:600;color:var(--text-dim);cursor:pointer;white-space:nowrap}
+.cat-tab.active{background:var(--blue);border-color:var(--blue-mid);color:white}
+
+/* BACK BTN */
+.back-btn{display:flex;align-items:center;gap:6px;color:var(--yellow);font-size:.85rem;font-weight:600;cursor:pointer;margin-bottom:12px;padding:4px 0}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-muted)}
+.empty-state i{font-size:2.5rem;margin-bottom:10px;display:block}
+.empty-state p{font-size:.85rem}
+
+/* ADMIN */
+.switch-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
+.sw-label{font-size:.88rem;color:var(--text)}
+.sw-sub{font-size:.73rem;color:var(--text-muted);margin-top:1px}
+.admin-stat-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:.85rem}
+.admin-stat-row:last-child{border:none}
+.admin-stat-label{color:var(--text-dim)}
+.admin-stat-val{font-weight:700;color:var(--text)}
+
+/* LOG */
+.log-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.log-icon{width:32px;height:32px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:.82rem;color:var(--text-dim);flex-shrink:0}
+.log-icon.wa{background:rgba(37,211,102,.15);color:var(--green-wa)}
+.log-icon.new{background:rgba(0,68,204,.2);color:#6699ff}
+.log-icon.edit{background:rgba(253,224,0,.1);color:var(--yellow)}
+.log-text{flex:1;font-size:.8rem;color:var(--text-dim)}
+.log-text strong{color:var(--text)}
+.log-time{font-size:.68rem;color:var(--text-muted);flex-shrink:0}
+
+/* TABS */
+.tab-bar{background:var(--surface);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:8px 0 28px;flex-shrink:0}
+.tab{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--text-muted);flex:1;cursor:pointer;transition:color .15s;padding:4px 0}
+.tab i{font-size:1.2rem}
+.tab span{font-size:.63rem;font-weight:600;letter-spacing:.3px;text-transform:uppercase}
+.tab.active{color:var(--yellow)}
+.tab-dot{width:4px;height:4px;border-radius:50%;background:var(--yellow);opacity:0}
+.tab.active .tab-dot{opacity:1}
+
+/* SECTION TITLE */
+.section-title{font-size:.63rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;margin-top:4px}
+
+/* TOAST */
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:#1f2937;border:1px solid rgba(255,255,255,.1);color:white;padding:10px 20px;border-radius:24px;font-size:.84rem;font-weight:500;z-index:9999;opacity:0;transition:all .3s;box-shadow:0 8px 24px rgba(0,0,0,.4);pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:8000;display:none;align-items:flex-end}
+.modal-overlay.show{display:flex}
+.modal{background:var(--surface);border-radius:20px 20px 0 0;padding:24px;width:100%;max-height:80vh;overflow-y:auto}
+.modal-title{font-weight:700;font-size:1rem;margin-bottom:16px;color:var(--text)}
+
+/* RESULT COUNT */
+.result-count{font-size:.68rem;color:var(--text-muted);margin-bottom:8px;text-align:right}
+
+/* iOS Safari touch fixes */
+.num-btn,.filter-pill,.client-item,.tab,.svc-card,.cat-tab,.back-btn,.btn,.btn-sm,.switch-row button{
+  touch-action:manipulation;
+  -webkit-touch-callout:none;
+}
+/* Force Safari to recognize div clicks */
+[onclick]{cursor:pointer;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-bg"></div>
+  <div class="login-logo">MICHELIN<br><span>·</span></div>
+  <p class="login-sub">Grimaldi · Sistema CRM</p>
+  <div class="pin-track">
+    <div class="pin-dot" id="d0"></div>
+    <div class="pin-dot" id="d1"></div>
+    <div class="pin-dot" id="d2"></div>
+    <div class="pin-dot" id="d3"></div>
+  </div>
+  <div class="numpad">
+    <button class="num-btn" onclick="press('1')">1<sub>·</sub></button>
+    <button class="num-btn" onclick="press('2')">2<sub>ABC</sub></button>
+    <button class="num-btn" onclick="press('3')">3<sub>DEF</sub></button>
+    <button class="num-btn" onclick="press('4')">4<sub>GHI</sub></button>
+    <button class="num-btn" onclick="press('5')">5<sub>JKL</sub></button>
+    <button class="num-btn" onclick="press('6')">6<sub>MNO</sub></button>
+    <button class="num-btn" onclick="press('7')">7<sub>PQRS</sub></button>
+    <button class="num-btn" onclick="press('8')">8<sub>TUV</sub></button>
+    <button class="num-btn" onclick="press('9')">9<sub>WXYZ</sub></button>
+    <div></div>
+    <button class="num-btn" onclick="press('0')">0</button>
+    <button class="num-btn del" onclick="delPin()"><i class="fa-solid fa-delete-left"></i></button>
+  </div>
+  <p class="pin-error" id="pin-error">PIN incorrecto. Intente de nuevo.</p>
+</div>
+
+<!-- APP -->
+<div id="app-container">
+  <div class="header">
+    <div class="header-brand">
+      <h1>MICHELIN <span style="color:var(--yellow)">·</span> Grimaldi</h1>
+      <small id="header-sub">CRM · Sistema de Gestión</small>
+    </div>
+    <div class="role-chip">
+      <div class="role-dot" id="role-dot"></div>
+      <span id="role-badge">Empleado</span>
+    </div>
+  </div>
+
+  <div class="content" id="main-content">
+
+    <!-- VIEW: CLIENTES -->
+    <div id="v-clients" class="view active">
+      <div class="stats-row" id="stats-row"></div>
+      <div class="search-wrap">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input class="search-input" type="search" id="search" placeholder="Nombre, placa, teléfono..." oninput="renderList()">
+      </div>
+      <div class="filter-scroll" id="filter-pills"></div>
+      <div class="result-count" id="result-count"></div>
+      <div id="client-list"></div>
+    </div>
+
+    <!-- VIEW: DETALLE/ACCION -->
+    <div id="v-action" class="view">
+      <div ontouchstart="" <div class="back-btn" onclick="go('v-clients','tab-clients')">
+        <i class="fa-solid fa-chevron-left"></i> Clientes
+      </div>
+      <div class="client-detail-header" id="detail-header"></div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon"><i class="fa-solid fa-pen"></i></div>
+          <span class="card-title">Datos del Cliente</span>
+        </div>
+        <div class="field"><label>Nombre Completo</label><input type="text" id="a-name" oninput="previewMsg()"></div>
+        <div class="row-fields">
+          <div class="field"><label>Teléfono</label><input type="tel" id="a-phone" oninput="previewMsg()"></div>
+          <div class="field"><label>Saldo ($)</label><input type="number" id="a-balance" oninput="previewMsg()" style="color:var(--yellow);font-weight:700"></div>
+        </div>
+        <div class="field"><label>Vehículo</label><input type="text" id="a-car" oninput="previewMsg()"></div>
+        <div class="row-fields">
+          <div class="field"><label>Placas</label><input type="text" id="a-plate"></div>
+          <div class="field"><label>Sucursal</label>
+            <select id="a-sucursal">
+              <option>Bucerías</option>
+              <option>Libramiento</option>
+              <option>Nuevo Vallarta</option>
+              <option>Apodaca</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Código de Servicio</label>
+          <select id="a-code" onchange="previewMsg()">
+            <option value="">-- Seleccionar servicio --</option>
+          </select>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-ghost btn-sm" onclick="saveClientEdit()"><i class="fa-solid fa-floppy-disk"></i> Guardar</button>
+          <button class="btn btn-red btn-sm" onclick="deleteClient()"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(37,211,102,.15);border-color:rgba(37,211,102,.2);color:var(--green-wa)">
+            <i class="fa-brands fa-whatsapp"></i>
+          </div>
+          <span class="card-title">Recordatorio WhatsApp</span>
+        </div>
+        <div class="msg-box" id="msg-preview">Selecciona un código de servicio...</div>
+        <button class="btn btn-wa" onclick="sendWA()">
+          <i class="fa-brands fa-whatsapp"></i> Abrir en WhatsApp
+        </button>
+      </div>
+    </div>
+
+    <!-- VIEW: NUEVO CLIENTE -->
+    <div id="v-new" class="view">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon"><i class="fa-solid fa-user-plus"></i></div>
+          <span class="card-title">Registrar Nuevo Cliente</span>
+        </div>
+        <div class="field"><label>Nombre Completo *</label><input type="text" id="n-name" placeholder="Ej: Juan García López"></div>
+        <div class="row-fields">
+          <div class="field"><label>Teléfono *</label><input type="tel" id="n-phone" placeholder="3221234567"></div>
+          <div class="field"><label>Saldo Inicial ($)</label><input type="number" id="n-balance" value="0"></div>
+        </div>
+        <div class="field"><label>Vehículo</label><input type="text" id="n-car" placeholder="Marca Modelo Año"></div>
+        <div class="row-fields">
+          <div class="field"><label>Placas</label><input type="text" id="n-plate" placeholder="ABC123X"></div>
+          <div class="field"><label>Sucursal</label>
+            <select id="n-sucursal">
+              <option>Bucerías</option>
+              <option>Libramiento</option>
+              <option>Nuevo Vallarta</option>
+              <option>Apodaca</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Código de Servicio</label>
+          <select id="n-code"><option value="">-- Seleccionar --</option></select>
+        </div>
+        <button class="btn btn-primary" onclick="saveNewClient()" style="margin-top:6px">
+          <i class="fa-solid fa-check"></i> Registrar Cliente
+        </button>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+          <span class="card-title">Actividad Reciente</span>
+        </div>
+        <div id="activity-log"><div class="empty-state" style="padding:20px 0"><i class="fa-regular fa-clock"></i><p>Sin actividad aún</p></div></div>
+      </div>
+    </div>
+
+    <!-- VIEW: COTIZAR -->
+    <div id="v-quote" class="view">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon"><i class="fa-solid fa-calculator"></i></div>
+          <span class="card-title">Cotizador de Servicios</span>
+        </div>
+        <div class="field">
+          <label>Buscar Servicio</label>
+          <input class="search-input" type="search" id="q-search" placeholder="Nombre o código..." oninput="filterServices()" style="margin-bottom:8px">
+        </div>
+        <div class="field">
+          <label>Servicio</label>
+          <select id="q-select" onchange="calcQuote()">
+            <option value="">-- Seleccionar --</option>
+          </select>
+        </div>
+        <div class="quote-result" id="q-result">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div>
+              <div class="quote-price">$<span id="q-price"></span></div>
+              <div class="quote-desc" id="q-desc"></div>
+              <div class="q-badge" id="q-cat"></div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:.68rem;color:var(--text-muted)">Código</div>
+              <div style="font-size:.8rem;color:var(--text-dim);margin-top:2px;font-weight:600" id="q-code-lbl"></div>
+            </div>
+          </div>
+        </div>
+        <div class="field" style="margin-top:4px">
+          <label>Teléfono (opcional)</label>
+          <input type="tel" id="q-phone" placeholder="3221234567" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:Barlow,sans-serif;font-size:.95rem;width:100%;padding:11px 14px">
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-ghost" onclick="copyQuote()"><i class="fa-solid fa-copy"></i> Copiar</button>
+          <button class="btn btn-wa" onclick="sendQuote()"><i class="fa-brands fa-whatsapp"></i> Enviar</button>
+        </div>
+      </div>
+      <div class="section-title">Catálogo Completo</div>
+      <div class="cat-tabs" id="cat-tabs"></div>
+      <div id="services-list"></div>
+    </div>
+
+    <!-- VIEW: ADMIN -->
+    <div id="v-admin" class="view">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(229,57,53,.15);border-color:rgba(229,57,53,.2);color:#ff6b6b"><i class="fa-solid fa-shield-halved"></i></div>
+          <span class="card-title">Panel de Administración</span>
+        </div>
+        <div id="admin-stats-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon"><i class="fa-solid fa-database"></i></div>
+          <span class="card-title">Gestión de Datos</span>
+        </div>
+        <div class="switch-row">
+          <div><div class="sw-label">Exportar CSV</div><div class="sw-sub">Descarga todos los clientes</div></div>
+          <button class="btn btn-ghost btn-sm" onclick="exportCSV()"><i class="fa-solid fa-file-csv"></i> CSV</button>
+        </div>
+        <div class="switch-row">
+          <div><div class="sw-label">Respaldo JSON</div><div class="sw-sub">Guarda copia de seguridad</div></div>
+          <button class="btn btn-ghost btn-sm" onclick="exportJSON()"><i class="fa-solid fa-file-code"></i> JSON</button>
+        </div>
+        <div class="switch-row" style="border:none">
+          <div><div class="sw-label">Importar JSON</div><div class="sw-sub">Restaurar respaldo anterior</div></div>
+          <label class="btn btn-ghost btn-sm" style="cursor:pointer"><i class="fa-solid fa-upload"></i> Importar<input type="file" accept=".json" onchange="importJSON(event)" style="display:none"></label>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon"><i class="fa-solid fa-circle-info"></i></div>
+          <span class="card-title">Acerca del Sistema</span>
+        </div>
+        <div style="font-size:.8rem;color:var(--text-dim);line-height:1.8;padding-top:4px">
+          <p><strong style="color:var(--text)">Michelin CRM v2.0</strong></p>
+          <p>Grimaldi Car Service · Fase 1</p>
+          <p>Sistema local sin backend.</p>
+          <p>Los datos se guardan en este dispositivo.</p>
+          <p style="margin-top:8px;color:var(--text-muted);font-size:.72rem">PIN Empleado: 1234 · PIN Admin: 9999</p>
+          <p style="color:var(--text-muted);font-size:.72rem">Para instalar: Compartir → Añadir a pantalla de inicio</p>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- TABS -->
+  <div class="tab-bar">
+    <div ontouchstart="" <div class="tab active" id="tab-clients" onclick="go('v-clients','tab-clients')">
+      <i class="fa-solid fa-users"></i><span>Clientes</span><div class="tab-dot"></div>
+    </div>
+    <div ontouchstart="" <div class="tab" id="tab-new" onclick="go('v-new','tab-new')">
+      <i class="fa-solid fa-user-plus"></i><span>Nuevo</span><div class="tab-dot"></div>
+    </div>
+    <div ontouchstart="" <div class="tab" id="tab-quote" onclick="go('v-quote','tab-quote')">
+      <i class="fa-solid fa-tag"></i><span>Cotizar</span><div class="tab-dot"></div>
+    </div>
+    <div ontouchstart="" <div class="tab" id="tab-admin" onclick="go('v-admin','tab-admin')">
+      <i class="fa-solid fa-gear"></i><span>Admin</span><div class="tab-dot"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal">
+    <div class="modal-title" id="confirm-title">¿Confirmar acción?</div>
+    <p id="confirm-msg" style="font-size:.85rem;color:var(--text-dim);margin-bottom:16px"></p>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-red" id="confirm-ok">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   BASE DE DATOS COMPLETA
+   ============================================================ */
+const DEFAULT_DB = [{"name": "ADOLFO CARRANZA", "car": "MAZDA CX5 2023", "plate": "", "phone": "3319441917", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ADRIAN CURIEL", "car": "KIA FORTE 2024 ", "plate": "", "phone": "3221380644", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ADRIAN EDUARDO GONZALEZ PLASCENCIA", "car": "TOYOTA SIENNA 2021", "plate": "", "phone": "4772766504", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ADRIAN OVISPO", "car": "MAZDA CX-5 2019", "plate": "", "phone": "3224296570", "balance": 188.93, "code": "", "sucursal": "Libramiento"}, {"name": "ADRIAN QUINTERO", "car": "NISSAN VERSA 2022", "plate": "", "phone": "3221812259", "balance": 111.19, "code": "", "sucursal": "Libramiento"}, {"name": "AGUABAN", "car": "329 291 7090", "plate": "", "phone": "", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "ALAMBRADOS PERIMETRAL", "car": "NISSAN NP300 2014", "plate": "", "phone": "3342018614", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ALARMAS Y SISTEMAS TESSLA", "car": "TOYOTA HILUX 2023", "plate": "", "phone": "3314949681", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ALBERTO CABALLERO", "car": "JEEP GRAND CHEROKEE 2019", "plate": "RFL348B", "phone": "5555720116", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ALBERTO RODRIGUEZ SAINZ", "car": "BYD SONG PRO 2025", "plate": "", "phone": "9612339946", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ALDO JAVIER TOVAR DE DIOS", "car": "VOLKSWAGEN JETTA 2014", "plate": "", "phone": "3221369276", "balance": 447.36, "code": "", "sucursal": "Libramiento"}, {"name": "ALEJANDRA CAPPELLI", "car": "HONDA ODDSEY 2006", "plate": "", "phone": "3228893821", "balance": 262.67, "code": "", "sucursal": "Libramiento"}, {"name": "ALEJANDRA JOANA JIMENEZ LERMA", "car": "NISSAN VERSA 2019", "plate": "", "phone": "3222055149", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ALEJANDRA ULLOA BECERRA", "car": "-", "plate": "", "phone": "3221720618", "balance": 162.29, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ALEJANDRO ALVAREZ MARTINEZ", "car": "TOYOTA TACOMA 2016", "plate": "", "phone": "3312621486", "balance": 0, "code": "", "sucursal": "Libramiento"}, {"name": "ALEJANDRO BENITEZ", "car": "MAZDA MX5 2017", "plate": "", "phone": "5535757261", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ALEJANDRO CUEVAS", "car": "VOLKSWAGEN PASSAT 2014", "plate": "", "phone": "5547832754", "balance": 179.22, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ALEJANDRO DEL REAL GUZMAN", "car": "BMW X5 ", "plate": "", "phone": "3118478520", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ALEJANDRO GUTIERREZ JIMENEZ", "car": "CHEVROLET SUBURBAN 2005", "plate": "", "phone": "4493000039", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ALEJANDRO MAGALLANES", "car": "HONDA CRV 2012", "plate": "", "phone": "449415566", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ALEJANDRO MARTIN HERNANDEZ CASTELLANOS", "car": "AUDI A3 2016", "plate": "", "phone": "3781039705", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ALEJANDRO NUÑEZ", "car": "TOYOTA COROLLA 2016", "plate": "", "phone": "3221741045", "balance": 262.67, "code": "", "sucursal": "Libramiento"}, {"name": "ALEJANDRO RODRIGUEZZ", "car": "VW VENTO 2018", "plate": "", "phone": "6221345852", "balance": 66.58, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ALEX CASTELLON MALDONADO", "car": "MAZDA MAZDA2 2019", "plate": "", "phone": "3221751416", "balance": 655.06, "code": "", "sucursal": "Bucerías"}, {"name": "ALEXANDER FERNANDEZ", "car": "MERCEDES E200 2018", "plate": "JNK3059", "phone": "3221208059", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ALEXANDER WAYNE", "car": "VW JETTA", "plate": "", "phone": "2069631503", "balance": 24.1, "code": "", "sucursal": "Bucerías"}, {"name": "ALEXIS IBARRA.", "car": "MAZDA 2 2023", "plate": "", "phone": "3327221972", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "ALFONSO ESTRADA", "car": "BMW X3 2017 ", "plate": "", "phone": "3223563221", "balance": 735.61, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ALFONSO FLETES", "car": "TOYOTA CAMRY 2020", "plate": "RFX757A", "phone": "3222003385", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ALFONSO HERRERA RUIZ", "car": "FORD ESCAPE 2008", "plate": "", "phone": "3222321451", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ALFREDO JOYA RODRIGUEZ", "car": "JEEP LIBERTY 2005", "plate": "", "phone": "3312878151", "balance": 262.67, "code": "", "sucursal": "Libramiento"}, {"name": "ALFREDO RUIZ FALCON", "car": "CUPRA FORMETOR 2023", "plate": "", "phone": "9841642626", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ALFREDO URIBE ACEVES", "car": "RAM 700 2022", "plate": "PC8113B", "phone": "3221357805", "balance": 198.67, "code": "", "sucursal": "Bucerías"}, {"name": "ALONSO AVILA", "car": "KIA SELTOS 2021", "plate": "", "phone": "3221756508", "balance": 107.12, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "AMBROSIO BALLESTEROS", "car": "CHEVROLET TAHOE 2007", "plate": "", "phone": "3221415072", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "AMY MARGARET WELCH", "car": "FORD EXPLORER 2021", "plate": "", "phone": "3221201078", "balance": 578.56, "code": "", "sucursal": "Bucerías"}, {"name": "ANA LILIA DIAZ", "car": "NISSAN MARCH 2020", "plate": "", "phone": "3111179746", "balance": 492.98, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ANDREA GARCIA MARTINEZ", "car": "MITSUBISHI L200 2025", "plate": "", "phone": "3222388515", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ANDREA HERNANDEZ REYES", "car": "MAZDA CX5 2016", "plate": "", "phone": "3221113100", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ANGEL PACHECO", "car": "MITSUBISHI L200", "plate": "", "phone": "3223520440", "balance": 447.36, "code": "", "sucursal": "Libramiento"}, {"name": "ANGEL PACHECO", "car": "3223520440", "plate": "", "phone": "10311053", "balance": 447.36, "code": "", "sucursal": "Libramiento"}, {"name": "ANGELA ALBERTO  RIVAS", "car": "3221697808", "plate": "", "phone": "", "balance": 112.34, "code": "", "sucursal": "Bucerías"}, {"name": "ANGELICA HERNANDEZ MARTINEZ", "car": "HYUNDAI SONATA 2014", "plate": "", "phone": "3222705487", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ANNA MARIA BARUCK", "car": "FORD EXPLORER 2015", "plate": "", "phone": "8056898786", "balance": 358.78, "code": "", "sucursal": "Bucerías"}, {"name": "ANTONIO MARTINEZ ZEPEDA", "car": "MAZDA 3 2017", "plate": "", "phone": "3221300997", "balance": 510.96, "code": "", "sucursal": "Bucerías"}, {"name": "ARGENTO CONSTRUCCIONES Y CONSULTORIA AMBIENTAL", "car": "RENAULT KOLEOS 2018", "plate": "", "phone": "3222941964", "balance": 0.01, "code": "", "sucursal": "Bucerías"}, {"name": "ARKIT DISEÑO Y CONSTRUCCION", "car": "MERCEDES GLE450 2020", "plate": "10N318", "phone": "3221209759", "balance": 0, "code": "ZLD02", "sucursal": "Nuevo Vallarta"}, {"name": "ARMANDO HERNANDEZ", "car": "DODGE RAM 1500 2021", "plate": "", "phone": "3221718367", "balance": 159.06, "code": "", "sucursal": "Libramiento"}, {"name": "ARRENDADORA VIALPE", "car": "PEUGEOT 5008 2019", "plate": "", "phone": "3221356983", "balance": 56.59, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ARTENISA MAGAÑA", "car": "NISSAN MARCH ", "plate": "", "phone": "3221032950", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ARTURO GUILLEN", "car": "VOLKSWAGEN VENTO 2021", "plate": "", "phone": "9981694422", "balance": 1025.91, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ARTURO MENDOZA", "car": "MAZDA CX7 2012 ", "plate": "", "phone": "3122728027", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "AXEL BRAVO JIMENEZ", "car": "RIN SUELTO", "plate": "", "phone": "6861910620", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "AXEL JAZIEL CHAPARRO BEJARANO", "car": "HYUNDAI SANTA FE 2007", "plate": "", "phone": "3111624392", "balance": 19.1, "code": "", "sucursal": "Bucerías"}, {"name": "BEACHSIDE REAL ESTATE VENTURES", "car": "3221911888", "plate": "", "phone": "", "balance": 167.78, "code": "", "sucursal": "Bucerías"}, {"name": "BENITO JAUREGUI ARRIETA", "car": "BMW", "plate": "", "phone": "3320260540", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "BENITO SCHON", "car": "HONDA HRV 2019", "plate": "", "phone": "3227797809", "balance": 395.4, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "BERTHA GABRIELA DIAZ OCAMPO", "car": "VW VENTO 2020", "plate": "", "phone": "3221419483", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "BLANCA CELESTE IVONNE SANCHEZ MARTINEZ", "car": "FORD F150 2005", "plate": "", "phone": "4423305844", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "BLANCA GEORGINA RODRIGUEZ MARTINEZ", "car": "JEEP RENEGADE 2023", "plate": "", "phone": "3221505826", "balance": 753.54, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "BRAIN GALON", "car": "MAZDA CX3 2024", "plate": "RGK198A", "phone": "4802153918", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "BRANDO AGUILAR", "car": "NISSAN VERSA 2013", "plate": "", "phone": "3223512751", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "BRAULIO GALLO", "car": "VW JETTA TDI 2009", "plate": "", "phone": "3333627801", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "BRAYAN JAVIER CASTRO", "car": "VW JETTA 2013", "plate": "", "phone": "3881037032", "balance": 262.67, "code": "", "sucursal": "Libramiento"}, {"name": "BRETT KENNEDY ELLSWORTH", "car": "HONDA PILOT 2014", "plate": "REZ647A", "phone": "3221356579", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "BRUCE KOWALISYN", "car": "CHEVROLET SUBURBAN 2002 5.3", "plate": "", "phone": "0012196890711", "balance": 245.4, "code": "", "sucursal": "Bucerías"}, {"name": "CARLOS BARRERA", "car": "VOLKSWAGEN GOL 2016", "plate": "", "phone": "9993666328", "balance": 19.81, "code": "", "sucursal": "Libramiento"}, {"name": "CARLOS BASS", "car": "FORD F150 2003", "plate": "", "phone": "3105603399", "balance": 276.26, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "CARLOS CARDENAS CORTEZ", "car": "CHEVROLET BEAT 2019", "plate": "", "phone": "3221116384", "balance": 498.22, "code": "", "sucursal": "Libramiento"}, {"name": "CARLOS CESAR GUTIERREZ DEL VALLE", "car": "MAZDA CX5 2018", "plate": "", "phone": "5531435531", "balance": 657.8, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "CARLOS FRANCISCO  ONTIVEROS GONZALEZ", "car": "DODGE DURANGO 2007", "plate": "", "phone": "3221606143", "balance": 8.11, "code": "", "sucursal": "Bucerías"}, {"name": "CARLOS GONZALEZ-", "car": "HYUNDAI", "plate": "", "phone": "3112447152", "balance": 42.08, "code": "", "sucursal": "Bucerías"}, {"name": "CARLOS GRIMALDI", "car": "FIAT MOBI 2019", "plate": "RFA013B", "phone": "6622571737", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "CARLOS HERNANDEZ", "car": "3222721621", "plate": "", "phone": "", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "CARLOS LEMUS MATEOS", "car": "MERCEDES GLC350 2018", "plate": "", "phone": "3221060439", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "CARLOS LOPEZ MACIAS", "car": "KIA SORENTO 2017", "plate": "", "phone": "3318385952", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "CARLOS LOPEZ MEDINA", "car": "VW POLO 2018", "plate": "", "phone": "3221293614", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "CARLOS RAMIREZ,", "car": "MERCEDEZ B GLS 450 2024", "plate": "", "phone": "3334412388", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "CARLOS RUIZ PEREZ", "car": "CUPRA LEON 2020", "plate": "", "phone": "3312557183", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "CARLOS VILLA", "car": "CHEVROLET AVEO 2017", "plate": "", "phone": "3221823868", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "CARLOS VOTTORIO AGNESI", "car": "FORD EXPLORER 2014", "plate": "", "phone": "3331893132", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "CARMEN GONZALEZ", "car": "KIA SOUL", "plate": "S02BCJ", "phone": "6264825787", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "CAROLINA CHAVEZ", "car": "CHEVROLET AVEO 2024", "plate": "", "phone": "3292980474", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "CAROLINA VERDUZCO", "car": "VOLVO", "plate": "", "phone": "3223233995", "balance": 45.4, "code": "N2", "sucursal": "Bucerías"}, {"name": "CASA 7", "car": "TOYOTA HIACE ", "plate": "", "phone": "3222728618", "balance": 77.77, "code": "", "sucursal": "Bucerías"}, {"name": "CELINA ALVAREZ", "car": "MAZDA 3", "plate": "", "phone": "3227797838", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "CELSO HUMBERTO DELGADO RAMIREZ", "car": "NISSAN SENTRA 2016", "plate": "", "phone": "3112703916", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "CESAR GERARDO VERA MOLINA", "car": "NISSAN NP300 ", "plate": "", "phone": "3221817980", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "CESAR GILIBERT", "car": "JEEP COMPAS 2012", "plate": "JME8204", "phone": "3221201011", "balance": 1760.18, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "CESAR MANUEL JAUREGUI GALLEGOS", "car": "HONDA CIVIC 2008", "plate": "", "phone": "3221421209", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "CESAR MARIZ", "car": "TOYOTA SIENNA 2012", "plate": "", "phone": "3221295714", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "CESAR RICARDO OCHOA", "car": "BMW 320I 2021", "plate": "", "phone": "", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "CESAR SILVA BECERRA", "car": "SUZUKI VITARA 2022", "plate": "", "phone": "3331761366", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "CHERYL EASTERWOOD", "car": "HONDA CRV 2016", "plate": "", "phone": "5415104971", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "CHRIS MATTHEWS", "car": "HONDA PILOT ", "plate": "", "phone": "4155480497", "balance": 111.19, "code": "", "sucursal": "Libramiento"}, {"name": "CHRISTIAN HIDALGO", "car": "PEUGEOT 2008 2023", "plate": "", "phone": "9841392508", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "CHRISTOPHER HOUWELING", "car": "HONDA PILOT", "plate": "", "phone": "3221010213", "balance": 302.01, "code": "", "sucursal": "Bucerías"}, {"name": "CLAUDIA FLORES", "car": "VOLVO S60 2023", "plate": "20N042", "phone": "3221525577", "balance": 0, "code": "ZLC01", "sucursal": "Bucerías"}, {"name": "CLAUDIA JUDITH DUEÑA JOYA", "car": "MAZDA", "plate": "", "phone": "3118477736", "balance": 613.73, "code": "", "sucursal": "Bucerías"}, {"name": "COMERCIALIZADORA SERRA", "car": "-", "plate": "", "phone": "3319715450", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "CONSTRUCCION PATRIMONIAL", "car": "FORD ESCAPE 2009", "plate": "", "phone": "3221357782", "balance": 2354.5, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "CONSTRUCCIONES Y PROYECTOS SIMEX", "car": "NISSAN XTRAIL ", "plate": "", "phone": "6691169341", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "CONSULTORES CADENA, BARRIO Y ASOCIADOS", "car": "MAZDA CX5 2018", "plate": "", "phone": "3221595773", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "CORAL CADMAN", "car": "HONDA CRV ", "plate": "REV947B", "phone": "3222297851", "balance": 101.56, "code": "ZLA01-K", "sucursal": "Bucerías"}, {"name": "CORY BIRBACH", "car": "+1 (907) 297-9022", "plate": "", "phone": "", "balance": 227.41, "code": "", "sucursal": "Bucerías"}, {"name": "CRISTIAN FARIAS VALDOVINOS", "car": "MITSUBISHI L200 2020", "plate": "", "phone": "3221183895", "balance": 118.03, "code": "", "sucursal": "Bucerías"}, {"name": "CRISTIAN HERMAN ESPINOSA SAAVEDRA", "car": "-", "plate": "", "phone": "7711236561", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "DALBERTO RENTERIA", "car": "GMC DENALI 2020", "plate": "", "phone": "3223226997", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "DANIEL ALEJANDRO AJMAD", "car": "HONDA HRV 2023", "plate": "", "phone": "3223016422", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "DANIEL ALEJANDRO SUAREZ PAREDES", "car": "NISSAN SENTRA 2017", "plate": "", "phone": "3221349906", "balance": 447.36, "code": "", "sucursal": "Libramiento"}, {"name": "DANIEL OCHOA", "car": "TOYOTA COROLLA 2004", "plate": "", "phone": "556771745", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "DANIEL TORRES TORRES", "car": "FORD RANGER 2007", "plate": "", "phone": "3221463393", "balance": 705.32, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "DANIELA ALEJANDRA GONZALEZ", "car": "HONDA CRV 2017", "plate": "", "phone": "3221207846", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "DAVID BRUCC BURGETT", "car": "HONDA CRV 2015 ", "plate": "", "phone": "2062264064", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "DAVID DOMINIK FLORIAN STÁHR", "car": "JETOUR TI ", "plate": "", "phone": "9934005233", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "DAVID LUSISNAN", "car": "GWM TANK 300 2026", "plate": "", "phone": "6049161175", "balance": 566.94, "code": "", "sucursal": "Libramiento"}, {"name": "DAVID MARQUEZ", "car": "TOYOTA YARIS 2020", "plate": "", "phone": "3222169833", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "DAVID RIVERA.", "car": "TOYOTA HILUX 2016", "plate": "", "phone": "3221858237", "balance": 290.23, "code": "", "sucursal": "Bucerías"}, {"name": "DEBBIE VIDLER", "car": "MERCEDES AMG", "plate": "", "phone": "3221509255", "balance": 0, "code": "", "sucursal": "Libramiento"}, {"name": "DEL SUPER A SU CASA", "car": "CHEVROLET TORNADO VAN ", "plate": "L16514", "phone": "3228882237", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "DESTILADERAS RESORT OPERATIONS", "car": "RAM DAKOTA ", "plate": "", "phone": "3221182657", "balance": 900.35, "code": "", "sucursal": "Bucerías"}, {"name": "DESTILADERAS RESORT OPERATIONS", "car": "JEEP PATRIOT 2014", "plate": "", "phone": "3221378167", "balance": 900.35, "code": "", "sucursal": "Bucerías"}, {"name": "DIANA FUNES HERNANDEZ", "car": "NISSAN VERSA 2018", "plate": "", "phone": "7531002196", "balance": 121.46, "code": "", "sucursal": "Libramiento"}, {"name": "DIEGO FERNANDEZ", "car": "JEEP WRANGLER 1994", "plate": "", "phone": "3228899676", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "DIEGO GONZALEZ", "car": "NISSAN FRONTIER 2004", "plate": "", "phone": "3336612583", "balance": 609.03, "code": "", "sucursal": "Bucerías"}, {"name": "DIEGO RAUL NAVARRO GUTIERREZ", "car": "TOYOTA RAV4 2021", "plate": "", "phone": "3222272278", "balance": 1139.82, "code": "", "sucursal": "Bucerías"}, {"name": "DONALD MORROW", "car": "KIA SOUL 2021", "plate": "", "phone": "0017202177409", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "DOUG CARPENTER", "car": "TOYOTA YARIS 2024 ", "plate": "", "phone": "3223795407", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "DULCE MARIA ROMERO ENRIQUEZ", "car": "FORD ESCAPE 2014", "plate": "", "phone": "2086047919", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "EDEN FERNANDEZ", "car": "SUZUKI ERTIGA 2022 ", "plate": "", "phone": "3221167744", "balance": 379.42, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "EDGAR DAVID ORTIZ GONZALEZ", "car": "TOYOTA AVANZA 2016", "plate": "", "phone": "3223508454", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "EDGAR EDUARDO COMPARAN COMPARAN", "car": "BMW X1 2024 ", "plate": "RED256B", "phone": "3292988233", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "EDGAR MIGUEL FALCON", "car": "VW VENTO 2018", "plate": "", "phone": "3221561620", "balance": 143.83, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "EDGAR TORRES.", "car": "NISSAN TIIDA 2011", "plate": "", "phone": "3317224523", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "EDI GUTIERREZ", "car": "MAZDA 3 2018", "plate": "", "phone": "3221311751", "balance": 452.34, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "EDUARDO AGUIRRE CALLEROS", "car": "BYD SHARK 2025 ", "plate": "", "phone": "3331293007", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ELIGIO GARCIA JIMENEZ", "car": "TOYOTA AVANZA 2023", "plate": "", "phone": "3117435210", "balance": 447.36, "code": "SIN", "sucursal": "Libramiento"}, {"name": "ELIZABETH CAMPUZANO", "car": "AUDI A3 2018", "plate": "", "phone": "5513763512", "balance": 232.52, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ELPIDIO RODRIGUEZ RODRIGUEZ", "car": "MAZDA M3H ISP AM 2023", "plate": "", "phone": "3221441987", "balance": 242.81, "code": "", "sucursal": "Bucerías"}, {"name": "ELSA PATRICIA GUTIERREZ CURIEL", "car": "LANDROVER RANGERROVER 2016", "plate": "RBC315", "phone": "7442252595", "balance": 1588.07, "code": "ZLQ19", "sucursal": "Nuevo Vallarta"}, {"name": "EMILIO ANDALON PADILLA", "car": "HONDA CRV", "plate": "", "phone": "3222408184", "balance": 52.78, "code": "N2", "sucursal": "Bucerías"}, {"name": "EMILY NOYOLA", "car": "SEAT IBIZA 2018", "plate": "", "phone": "4441733504", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "EMMA ELIZABETH COBB", "car": "VW SPORTVAN 2009", "plate": "", "phone": "3221582959", "balance": 447.36, "code": "", "sucursal": "Libramiento"}, {"name": "EMMANUEL ROBLES LOPEZ", "car": "HIUNDAY CRETA 2021", "plate": "", "phone": "3221387980", "balance": 0, "code": "", "sucursal": "Libramiento"}, {"name": "ENRIQUE BERNAL ROJAS", "car": "HONDA CRV 2015", "plate": "", "phone": "3221601922", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ENRIQUETA VALCARCEL", "car": "CUPRA FORMENTO 2023", "plate": "", "phone": "3331914030", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ERIC RICARDO GONZALEZ BASKE", "car": "BMW X1", "plate": "", "phone": "3222373099", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "ERIC SCHNEDIER", "car": "HONDA CRV", "plate": "", "phone": "5632998250", "balance": 13.34, "code": "", "sucursal": "Bucerías"}, {"name": "ERICK DIAZ", "car": "VW TAIGUN 2023", "plate": "", "phone": "3292980474", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ERICK FLETES LIZARRAGA", "car": "VOLKSWAGEN JETTA 2020", "plate": "", "phone": "6692704240", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ERICK VADEBONCOEUR", "car": "322-380-9964", "plate": "", "phone": "", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "ERIKA GUTIERREZ", "car": "NIISSAN VERSA 2019", "plate": "", "phone": "3221991357", "balance": 369.71, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ERIKA TAPIA", "car": "MERCEDES ML350 2012", "plate": "", "phone": "3228896464", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ERIKA TATIANA MENESES SANCHEZ", "car": "VOLKSWAGEN TRANSPORTER 2017", "plate": "", "phone": "3221727205", "balance": 111.19, "code": "", "sucursal": "Libramiento"}, {"name": "ERNESTO OLVERA", "car": "TOYOTA HILUX 2017", "plate": "", "phone": "3221696153", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "ESTELA GARCIA GONZALEZ", "car": "HONDA CIVIC 2010", "plate": "", "phone": "3222897190", "balance": 693.21, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ETIENN COURET", "car": "ACURA RDX 2021", "plate": "", "phone": "0013478340213", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "FAUSTO CURIEL SOTO", "car": "SEAT IBIZA 2013", "plate": "", "phone": "5573727965", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "FAUSTO CURIEL SOTO", "car": "SEAT IBIZA 2013", "plate": "", "phone": "", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "FEDERICO ARRIZABALAGA", "car": "DODGE JOURNEY 2018", "plate": "", "phone": "3227790785", "balance": 1327.69, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "FEDERICO GUILLERMO TORRES DELGADILLO", "car": "MAZDA MX5 2024", "plate": "", "phone": "3222944953", "balance": 262.67, "code": "", "sucursal": "Libramiento"}, {"name": "FELIPE GOMEZ RODRIGUEZ", "car": "FORD RANGER 2024", "plate": "", "phone": "3221205453", "balance": 447.36, "code": "", "sucursal": "Libramiento"}, {"name": "FELIX ALVARADO", "car": "CHEVROLET SUBURBAN 1997", "plate": "", "phone": "3221606679", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "FELIX GONZALEZ ROBLES", "car": "HONDA CRV", "plate": "", "phone": "3221524267", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "FERMIN SANCHEZ FIGUEROA", "car": "MAZDA CX9 2021", "plate": "", "phone": "3221214349", "balance": 121.46, "code": "", "sucursal": "Libramiento"}, {"name": "FERNANDO CARMONA LOZANO", "car": "-", "plate": "", "phone": "3221349448", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "FERNANDO MARTINEZ.", "car": "VW JETTA 2017", "plate": "", "phone": "3222291093", "balance": 76.1, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "FERNANDO TORRES", "car": "MAZDA CX30 2025", "plate": "RGW500B", "phone": "3221188131", "balance": 0, "code": "ZLQ16", "sucursal": "Nuevo Vallarta"}, {"name": "FERNANDO ZUNO", "car": "VW TERAMONT 2025", "plate": "", "phone": "3332585595", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "FIDEL HERNANDEZ", "car": "NISSAN NP300", "plate": "", "phone": "3221676054", "balance": 240.66, "code": "", "sucursal": "Libramiento"}, {"name": "FIRST VIRTUAL MANAGEMENT MEXICO", "car": "TOYOTA HILUX", "plate": "", "phone": "3221492966", "balance": 178.89, "code": "", "sucursal": "Bucerías"}, {"name": "FLAVIO CONTRERAS", "car": "GMC YUCON DENALI 2021", "plate": "", "phone": "3339685513", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "FLOR DENYS COVARRUBIAS FLORES", "car": "TOYOTA TACOMA", "plate": "", "phone": "3222437585", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "FRANCISCO ALEJANDRO MARTINEZ DE LA CUEVA", "car": "SUZUKI JIMNY 2021", "plate": "", "phone": "3221578675", "balance": 216.04, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "FRANCISCO JAVIER ALVAREZ", "car": "CHEVROLET ONIX", "plate": "", "phone": "4181095811", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "FRANCISCO JAVIER GONZALEZ MARTINEZ", "car": "NISSAN SENTRA 2017", "plate": "", "phone": "9841803006", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "FRANCO RODRIGUEZ SANCHEZ", "car": "TOYOTA AVANZA 2024", "plate": "", "phone": "3221901070", "balance": 156.33, "code": "", "sucursal": "Bucerías"}, {"name": "FRANK CROWELL", "car": "NISSAN TSURU 2011", "plate": "", "phone": "3292983701", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "FRIDA CASTELAN TOVAR", "car": "HYUNDAI CRETA 2017", "plate": "", "phone": "5561062658", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "FURMAN BALDWIN", "car": "HONDA CRV 2016", "plate": "", "phone": "8312101656", "balance": 40.59, "code": "", "sucursal": "Bucerías"}, {"name": "GABRIEL JONES", "car": "KIA SPORTAGE 2022", "plate": "", "phone": "3222378622", "balance": 421.99, "code": "", "sucursal": "Bucerías"}, {"name": "GABRIEL PALOMERA OLVERA", "car": "3221397151", "plate": "", "phone": "", "balance": 77.31, "code": "", "sucursal": "Bucerías"}, {"name": "GABRIELA JIMENEZ", "car": "FORD ESCAPE ", "plate": "", "phone": "50363090537", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "GABRIELA LOPEZ OKHUYSEN", "car": "TOYOTA SIENNA 2016", "plate": "", "phone": "3324972433", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "GAETAN ST-CAR", "car": "TOYOTA AVANZA 2015", "plate": "310WWK", "phone": "3221919626", "balance": 335.72, "code": "", "sucursal": "Bucerías"}, {"name": "GEFF FREELAND", "car": "CHRYSLER VOYAGER 2006", "plate": "", "phone": "2508124444", "balance": 1107.25, "code": "", "sucursal": "Bucerías"}, {"name": "GENA TATIANA CURIEL MISSILER", "car": "DODGE JOURNEY 2016", "plate": "", "phone": "2222477", "balance": 841.22, "code": "", "sucursal": "Libramiento"}, {"name": "GERARDO ARZATE", "car": "RENAULT LOGAN 2017", "plate": "", "phone": "3221700177", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "GERARDO PEREZ .", "car": "CHEVROLET SILVERADO 2013", "plate": "PB3067A", "phone": "3224702101", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "GILBERTA MARTINEZ GALARZA", "car": "TOYOTA COROLLA 2007", "plate": "RGG150A", "phone": "3221885091", "balance": 135.78, "code": "ZLA04-K", "sucursal": "Bucerías"}, {"name": "GILKRO", "car": "-", "plate": "", "phone": "3221355872", "balance": 718.16, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "GIUSEPPE SARTOR", "car": "MAZDA CX5 2019", "plate": "", "phone": "3221829256", "balance": 384.37, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "GORDON THOMPSON", "car": "TOYOTA RAV4 2008", "plate": "", "phone": "3222977335", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "GOVACACIONES", "car": "NISSAN URVAN 2022", "plate": "", "phone": "3221644722", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "GREG MARTIN", "car": "JEEP GRAND CHEROKEE", "plate": "", "phone": "3221595677", "balance": 270.78, "code": "", "sucursal": "Bucerías"}, {"name": "GREGORY NELSON", "car": "JEEP GRAND CHEROKEE 2018", "plate": "", "phone": "3222940491", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "GRETTA FUENTES", "car": "0", "plate": "", "phone": "", "balance": 1243.71, "code": "", "sucursal": "Libramiento"}, {"name": "GRETTA FUENTES", "car": "TOYOTA AVANZA 2018", "plate": "", "phone": "3221920292", "balance": 1243.71, "code": "", "sucursal": "Libramiento"}, {"name": "GRORGE PITNER", "car": "NISSAN X-TERRA ", "plate": "", "phone": "3221008910", "balance": 216.11, "code": "", "sucursal": "Bucerías"}, {"name": "GRUPO INMOBILIARIO BAY REALTY MEXICO", "car": "JEEP WRANGLER ", "plate": "", "phone": "3292981428", "balance": 556.85, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "GRUPO INMOBILIARIO NACIONAL", "car": "SEAT IBISA 2013", "plate": "SSUJHOSES", "phone": "3221426560", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "GRUPO OCTANO", "car": "RAM TRADESMAN 2025", "plate": "", "phone": "3292958520", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "GUILLERMINA ZAMORA", "car": "JEEP LIBERTY 2006", "plate": "", "phone": "3151043309", "balance": 739.53, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "GUILLERMO GOMEZ REYES", "car": "RENAULT LOGAN 2018", "plate": "", "phone": "322319973", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "GUSTAVO AHUMADA MONTOYA", "car": "TOYOTA TACOMA", "plate": "", "phone": "3221947764", "balance": 128.35, "code": "", "sucursal": "Bucerías"}, {"name": "GUSTAVO BARAJAS", "car": "TOYOTA COROLLA 2009", "plate": "RFK120B", "phone": "3223605655", "balance": 101.17, "code": "", "sucursal": "Bucerías"}, {"name": "HECTOR GEOVANNI AVILES ROSAS", "car": "TOYOTA TACOMA 2002", "plate": "", "phone": "6242381979", "balance": 87.21, "code": "", "sucursal": "Bucerías"}, {"name": "HECTOR NUÑEZ", "car": "CHEVROLET SILVERADO 2005 ", "plate": "", "phone": "9842020739", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "HERMES PEREZ", "car": "GMC SIERRA AT4 2020", "plate": "", "phone": "3211036650", "balance": 111.19, "code": "", "sucursal": "Libramiento"}, {"name": "HERMINIO DEL TORO", "car": "HYUNDAI TUCSON 2017", "plate": "", "phone": "3313301680", "balance": 70.83, "code": "", "sucursal": "Bucerías"}, {"name": "HIELO CRISTAL DE VALLARTA", "car": "CHEVROLET TAHDE 2008", "plate": "SFRJBTOCO", "phone": "3292965801", "balance": 19.81, "code": "", "sucursal": "Libramiento"}, {"name": "HIYARI FERNANDA ELIAS OCHOA", "car": "VW VENTO 2020", "plate": "", "phone": "3111485421", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "HORACIO ROSALES FLETES", "car": "CHEVROLET SILVERADO 2022", "plate": "MY0311D", "phone": "3221350067", "balance": 102.34, "code": "", "sucursal": "Bucerías"}, {"name": "IAN JEFFREY SHEPHERD", "car": "SEDAN SUZUKI 2007", "plate": "", "phone": "5215519517400", "balance": 617.88, "code": "", "sucursal": "Libramiento"}, {"name": "IGNACIO VARGAS MUNDO", "car": "DODGE NEON 2020", "plate": "", "phone": "3228888550", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ILUMINACION S.M", "car": "MG HS 2024", "plate": "", "phone": "3313790332", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "IMPULSORA PATRIA DE OCCIDENTE", "car": "TOYOTA HILUX", "plate": "", "phone": "5585532752", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "INGENIERIA Y TECNOLOGIA AVANZADA EN INSTALACIONES", "car": "MITSUBISHI MONTERO SPORT 2018", "plate": "", "phone": "5519655416", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "INMOBILIARIA HBD", "car": "CHEVROLET SUBURBAN 2013", "plate": "", "phone": "3228892102", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ISAAC", "car": "CHEVROLET SUBURBAN", "plate": "B2755022", "phone": "3221749738", "balance": 175.8, "code": "", "sucursal": "Bucerías"}, {"name": "ISABEL RAMOS NAVA", "car": "3221998151", "plate": "", "phone": "", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "ISAIAS CUITLAHUAC ROJAS VIZCARRA", "car": "NISSAN MARCH 2024", "plate": "", "phone": "3111272555", "balance": 1210.17, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ISRAEL GONZALEZ MILGAREJO", "car": "JEEP WRANGLER 2007", "plate": "", "phone": "3221602793", "balance": 109.97, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ISRRAEL", "car": "HONDA CIVIC 2014", "plate": "", "phone": "3221378167", "balance": 900.35, "code": "", "sucursal": "Bucerías"}, {"name": "IVAN LORENZO LLAMAS", "car": "RAM 700 2023", "plate": "", "phone": "3221301430", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "IVAN RAMOS", "car": "BMW X6M 2021", "plate": "", "phone": "3222552853", "balance": 0, "code": "", "sucursal": "Libramiento"}, {"name": "IVAN VALDOMINOS", "car": "GMC SIERRA 2025", "plate": "JY53945", "phone": "3221057710", "balance": 82.04, "code": "ZLP02", "sucursal": "Bucerías"}, {"name": "J. JESUS CASTILLO JIMENEZ", "car": "TOYOTA TACOMA 2019", "plate": "PG9918A", "phone": "3221375128", "balance": 760.4, "code": "", "sucursal": "Bucerías"}, {"name": "JACOBO LORENZO MONICO", "car": "NISSAN SENTRA 2013", "plate": "", "phone": "3221187404", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JAIME LIMON", "car": "TOYOTA YARIS 2016", "plate": "", "phone": "3221973541", "balance": 518.84, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JAIRO SAMAEL VALLE CARRASCO", "car": "NISSAN VERSA 2021", "plate": "", "phone": "3223066361", "balance": 1838.52, "code": "", "sucursal": "Bucerías"}, {"name": "JAVIER GONZALEZ PELAYO", "car": "CHRYSLER 200C 2016", "plate": "", "phone": "4774003208", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JAVIER OLALDE PALOMINO", "car": "0", "plate": "", "phone": "4131132622", "balance": 447.36, "code": "", "sucursal": "Libramiento"}, {"name": "JAVIER PADILLA", "car": "RAM 1996", "plate": "", "phone": "3222752182", "balance": 222.18, "code": "", "sucursal": "Bucerías"}, {"name": "JAVIER PEREAÑEZ", "car": "VW JETTA 2016", "plate": "", "phone": "3222145328", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JAVIER URRUTIA MEJIA", "car": "VOLKSWAGEN CADDY 2018", "plate": "", "phone": "3221175309", "balance": 19.81, "code": "SIN", "sucursal": "Libramiento"}, {"name": "JEAN MICHEL ARMENTA VARGAS", "car": "SWIFT", "plate": "", "phone": "3222231641", "balance": 6.02, "code": "", "sucursal": "Bucerías"}, {"name": "JEAN MICHEL ARMENTA VARGAS", "car": "TOYOTA HILUX DIESSEL 2018", "plate": "", "phone": "32227451926", "balance": 0.01, "code": "", "sucursal": "Bucerías"}, {"name": "JENNYFER LYNN FARMER", "car": "MITSUBISHI OUTLANDER 2006", "plate": "", "phone": "3222313585", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "JERRY REYN", "car": "DODGE JOURNEY 2022", "plate": "", "phone": "3222367082", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JESSICA TOPETE", "car": "JEEP WRANGLER 2016", "plate": "", "phone": "3311434357", "balance": 92.9, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JESUS ALAN PIÑA HERNANDEZ", "car": "SUELTA LLANTA", "plate": "", "phone": "3222740714", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JESUS ALDERETE", "car": "KIA SORENTO 2024", "plate": "", "phone": "831242059", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JESUS CASTILLO JIMENEZ", "car": "TOYOTA RAV4 ", "plate": "", "phone": "3221375128", "balance": 186.69, "code": "", "sucursal": "Bucerías"}, {"name": "JESUS MANUEL PEREZ SOLANO", "car": "AUDI A3 2013", "plate": "", "phone": "3221944623", "balance": 447.36, "code": "", "sucursal": "Libramiento"}, {"name": "JESUS MAXIMILIANO CONTRERAS BAÑUELOS", "car": "CAMION", "plate": "", "phone": "3310116150", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JHONY MONTOGOMERY", "car": "SUBURU OUTBACK 2011", "plate": "", "phone": "3221566721", "balance": 447.36, "code": "", "sucursal": "Libramiento"}, {"name": "JIM HART", "car": "NISSAN MARCH 2013", "plate": "", "phone": "2062291338", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JOE SKAGGS", "car": "RAM 2500 2006", "plate": "", "phone": "3221710011", "balance": 0.01, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JOEL OCTAVIO MEDINA FIGUEROA", "car": "MITSUBISHI MONTERO 2013", "plate": "", "phone": "3221342009", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "JOHN CLENDENIN  VENZA", "car": "TOYOTA VENZA 2009", "plate": "", "phone": "4441172723", "balance": 177.01, "code": "", "sucursal": "Bucerías"}, {"name": "JOHN WANAMAKER", "car": "FORD EXPLORER 2006", "plate": "", "phone": "3221520247", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JOHNNY PRIEGO DAMASCO", "car": "JEEP WRANGLER 2022", "plate": "", "phone": "3221169599", "balance": 150.57, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JONATHAN TELLO", "car": "MG 2024", "plate": "", "phone": "32213526668", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JORGE AGUSTIN LOPEZ", "car": "-", "plate": "", "phone": "5567021706", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JORGE CONTRERAS", "car": "5518427618", "plate": "", "phone": "", "balance": 140.29, "code": "", "sucursal": "Bucerías"}, {"name": "JORGE HERRERA", "car": "CHEVROLET BEAT 2019", "plate": "", "phone": "3221034227", "balance": 159.71, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JORGE LOPEZ LARA", "car": "-", "plate": "", "phone": "4491197503", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JORGE MEZA", "car": "BMW X5 2024", "plate": "18N112", "phone": "3323329278", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "JORGE NERI 322 245 1831", "car": "NISSAN MARCH 2013", "plate": "JKD4286", "phone": "3221757949", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JOSE AGUSTIN CRUZ", "car": "PEUGEOT 301", "plate": "", "phone": "3221365188", "balance": 262.67, "code": "", "sucursal": "Libramiento"}, {"name": "JOSE ALEJANDRO CURIEL RAYGOZA", "car": "0", "plate": "", "phone": "3221106507", "balance": 447.36, "code": "", "sucursal": "Libramiento"}, {"name": "JOSE ARTURO ALVAREZ DUEÑAS", "car": "TOYOTA SIENNA 2019", "plate": "", "phone": "3312808330", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JOSE BERNAL LEON", "car": "HONDA CIVIC 2022", "plate": "", "phone": "3221041495", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JOSE DAVID LOPEZ SANCHEZ", "car": "JEEP GRAND CHEROKEE 2015", "plate": "", "phone": "3221683688", "balance": 2489.67, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JOSE ELISEO RODRIGUEZ PELAYO", "car": "CHEVROLET UPLANDER 2005", "plate": "", "phone": "3221378345", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JOSE ENRIQUE GOMEZ HERNANDEZ", "car": "DODGE ATOS 2002", "plate": "N1557013", "phone": "3221697154", "balance": 498.22, "code": "", "sucursal": "Libramiento"}, {"name": "JOSE GONZALEZ AVALOS", "car": "NISSAN SENTRA 2017", "plate": "", "phone": "3223195486", "balance": 262.67, "code": "", "sucursal": "Libramiento"}, {"name": "JOSE LUIS LAZO GARCIA", "car": "KIA K3 2025 ", "plate": "", "phone": "5554543897", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JOSE LUIS RIOS", "car": "BYD SONG PLUS 2025", "plate": "RGJ175B", "phone": "3223184343", "balance": 14.32, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JOSE LUIS SANCHEZ.", "car": "CHRYSLER CIRRUS 2007", "plate": "JAM5777", "phone": "3222321043", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JOSE MANUEL GOMEZ.", "car": "NISSAN FRONTIER 2023", "plate": "", "phone": "3221023104", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JOSE MARIN", "car": "MAZDA 6 2021", "plate": "", "phone": "3221076397", "balance": 776.0, "code": "", "sucursal": "Libramiento"}, {"name": "JOSE MENDEZ LOPEZ", "car": "GMC DENALI 2020", "plate": "", "phone": "3221357216", "balance": 797.12, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JOSE MIGUEL SALINAS BOLAÑOS", "car": "VW JETTA 2017", "plate": "JNJ6793", "phone": "3221949343", "balance": 275.38, "code": "N2", "sucursal": "Nuevo Vallarta"}, {"name": "JOSE RIOS GONZALEZ", "car": "TOYOTA AVANZA 2017", "plate": "", "phone": "3221355986", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JOSE SERVIN CARRILLO", "car": "FORD F150 2008", "plate": "", "phone": "3221214230", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JOSE TOMAS DOMINGUEZ", "car": "VW JETTA SPORT 2014", "plate": "", "phone": "3221880238", "balance": 31.69, "code": "", "sucursal": "Bucerías"}, {"name": "JOSE VARGAS", "car": "NISSAN XTRAIL 2016", "plate": "RGD2790", "phone": "3221350495", "balance": 613.53, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JOSEFINA PORTILLO", "car": "VW TAOS 2023", "plate": "RJT957A", "phone": "3221356580", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JOSUE CASTELLANOS PACHECO", "car": "MAZDA 3 2018", "plate": "", "phone": "3222536977", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JOSUE TAPIA", "car": "VW VIRTUS ", "plate": "", "phone": "3224770124", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "JPCR", "car": "VOLVO XC-90 20", "plate": "", "phone": "3331901629", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JUAN ANTONIO PEÑA", "car": "TOYOTA COROLLA 2023", "plate": "", "phone": "3221506351", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JUAN AVIÑA", "car": "HONDA CRV 2025", "plate": "", "phone": "3221207846", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JUAN BERNARDO ALVAREZ DELGADO", "car": "TOYOTA HILUX 2020", "plate": "", "phone": "3223424970", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JUAN CARLOS ALONSO MADRIGAL", "car": "PEUGEOT RIFTER 2026", "plate": "JYH875A", "phone": "5626122676", "balance": 1900.92, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JUAN CARLOS GARCIA CASTILLON", "car": "CHEVROLETTE TRACKER 2008", "plate": "", "phone": "3221683502", "balance": 111.19, "code": "SIN", "sucursal": "Libramiento"}, {"name": "JUAN CARLOS GUTIERREZ", "car": "BYD KING 2025", "plate": "", "phone": "3333037207", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JUAN CARLOS RUIZ GASTULO", "car": "VW T-CROSS 2020", "plate": "", "phone": "3221900333", "balance": 364.64, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JUAN CARLOS ZEPEDA SANCHEZ", "car": "NISSAN VERSA 2019", "plate": "", "phone": "3221549697", "balance": 1087.74, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JUAN DE DIOS RODRIGUEZ", "car": "MAZDA 3 2006", "plate": "", "phone": "3291010196", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JUAN PABLO VARGAS MACIAS", "car": "DODDGE VISION 2018", "plate": "", "phone": "3222275685", "balance": 262.67, "code": "", "sucursal": "Libramiento"}, {"name": "JUANA BLOEM", "car": "CHEVROLET SPARK 2012", "plate": "", "phone": "3222984122", "balance": 109.54, "code": "", "sucursal": "Bucerías"}, {"name": "JULIETA IRENE LUCIA RUIZ RODRIGUEZ", "car": "VW T-CROSS 2022", "plate": "", "phone": "3221562451", "balance": 356.72, "code": "", "sucursal": "Bucerías"}, {"name": "JULIO ACEVEDO", "car": "KIA RIO 2017", "plate": "", "phone": "3336779168", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "JULIO ASPETIA", "car": "MITSUBISHI L200 2023", "plate": "", "phone": "3311445239", "balance": 0.01, "code": "", "sucursal": "Bucerías"}, {"name": "KAREN CHESSON", "car": "HONDA PILOT 2013", "plate": "", "phone": "9709884623", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "KAREN VANESA DUEÑAS CARRILLO", "car": "NISSAN KICKS 2023", "plate": "", "phone": "3221912215", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "KARLA AGUILAR", "car": "HYUNDAI CRETA 2022", "plate": "", "phone": "", "balance": 7.03, "code": "", "sucursal": "Bucerías"}, {"name": "KATALINA SAMU", "car": "MITSUBISHI OUTLANDER 2013", "plate": "", "phone": "3221358377", "balance": 16.52, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "KEA IMPORTACIONES", "car": "CHEVROLET TRAVERSE 2015", "plate": "", "phone": "3222420397", "balance": 1928.91, "code": "", "sucursal": "Bucerías"}, {"name": "KEA IMPORTACIONES S DE RL DE CV", "car": "NISSAN URVAN 2022", "plate": "", "phone": "3222167918", "balance": 26.03, "code": "", "sucursal": "Bucerías"}, {"name": "KEITH RICHARD SON", "car": "CHEVROLET SPARK 2017", "plate": "", "phone": "6513573177", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "KEVIN JHONSON", "car": "NISSAN XTRAIL 2016", "plate": "", "phone": "0017786751972", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "KURT SCHERF", "car": "TOYOTA RAV4 2014", "plate": "", "phone": "3221338208", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "LA MADRILEÑA", "car": "HYUNDAI ACCENT 2020", "plate": "", "phone": "3336765417", "balance": 1243.71, "code": "", "sucursal": "Libramiento"}, {"name": "LAS ANTILLAS CONSTRUCCIONES", "car": "FORD F-350 2025", "plate": "PD59243", "phone": "961133439", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "LAURA CECILIA VEGA MEDINA", "car": "KIA SELTOS ", "plate": "", "phone": "3222414445", "balance": 241.28, "code": "", "sucursal": "Bucerías"}, {"name": "LAURA REBECCA URREA", "car": "MAZDA CX5 2020", "plate": "", "phone": "3222940024", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "LAURA SOLDANO", "car": "HONDA BRV", "plate": "", "phone": "3222169058", "balance": 128.63, "code": "", "sucursal": "Bucerías"}, {"name": "LAZARO CRUZ GARDUÑO", "car": "CHEVROLET SILVERADO 2018", "plate": "", "phone": "3318937279", "balance": 715.34, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "LEIMI PAZ LOPEZ", "car": "FORD LOBO 2024", "plate": "", "phone": "3318287399", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "LEMMA COMERCIAL", "car": "33 1294 7494", "plate": "", "phone": "", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "LEONARDO DAVID MANJARAZ GOMEZ", "car": "9982940198", "plate": "", "phone": "10311053", "balance": 262.67, "code": "", "sucursal": "Libramiento"}, {"name": "LEONARDO GUTIERREZ GIL", "car": "SUZUKI JIMNY 2025", "plate": "", "phone": "3221213679", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "LETICIA MEDINA", "car": "BYD SONG PLUS 2026", "plate": "", "phone": "3221202275", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "LETICIA PEÑA", "car": "MAZDA CX3 2021", "plate": "", "phone": "3227797807", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "LIBERTAD UGARTE OROZCO", "car": "SUZUKI VITARA 2016", "plate": "", "phone": "3221562695", "balance": 238.29, "code": "", "sucursal": "Bucerías"}, {"name": "LILIANA REGALADO LOPEZ", "car": "10361053", "plate": "", "phone": "", "balance": 148.51, "code": "", "sucursal": "Bucerías"}, {"name": "LOURDES MERCHAD BELTRAN", "car": "NISSAN MARCH 2019", "plate": "", "phone": "3222750548", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "LUCIA GOMEZ", "car": "NISSAN XTRAIL 2009", "plate": "", "phone": "3223993923", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "LUCRECIA RIVAS OLMOS", "car": "NISSAN X-TRAIL 2018", "plate": "", "phone": "3221187068", "balance": 239.24, "code": "", "sucursal": "Bucerías"}, {"name": "LUIS ALBERTO FLORES", "car": "VW VENTO 2020", "plate": "", "phone": "7441918991", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "LUIS ALBERTO GONZALEZ VILLALOBOS", "car": "NISSAN NP300 ", "plate": "", "phone": "3221171896", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "LUIS ALBERTO ROBLES", "car": "CHRYSLER JEEP WRANGLER 2022", "plate": "", "phone": "811366410", "balance": 447.36, "code": "", "sucursal": "Libramiento"}, {"name": "LUIS ANTONIO ANAYA RODRIGUEZ", "car": "ZUZUKU SWIF 2019", "plate": "", "phone": "3221184473", "balance": 636.48, "code": "", "sucursal": "Libramiento"}, {"name": "LUIS ENRIQUE DUARTE LISCI", "car": "CHEVROLET MATIZ 2015", "plate": "", "phone": "3223051840", "balance": 1100.94, "code": "", "sucursal": "Bucerías"}, {"name": "LUIS FERNANDO RUIZ", "car": "KIA SPORTAGE 2024", "plate": "", "phone": "3221949229", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "LUIS FERNANDO SANCHEZ TEMORES", "car": "S10", "plate": "", "phone": "3221077430", "balance": 50.47, "code": "", "sucursal": "Bucerías"}, {"name": "LUIS MIGUEL CASTRO MONTERO", "car": "NISSAN VERSA 2017", "plate": "", "phone": "", "balance": 201.41, "code": "", "sucursal": "Bucerías"}, {"name": "LUIS RAMON IBARRIA TREJO", "car": "NISSAN MARCH 2022 ", "plate": "", "phone": "3312464089", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "LUIS ROBERTO CASANOVA OLAGUE", "car": "VW AMAROK 2019", "plate": "", "phone": "3221206547", "balance": 1183.83, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "LUIS RODRIGO TOSCANO MEDINA", "car": "TOYOTA AVANZA 2020", "plate": "", "phone": "3335690696", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "LUIS ROGELIO ORTEGA MARTINEZ DE ESCOBAR", "car": "VW GTI 2012", "plate": "", "phone": "5545666230", "balance": 27.55, "code": "", "sucursal": "Bucerías"}, {"name": "LUIS UVENCE TRELLEZ", "car": "JAC 8 2025", "plate": "", "phone": "3221126978", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "LUZ MARCELA GALLO PADILLA", "car": "VW TIGUAN 2018", "plate": "", "phone": "3221282982", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "LVRPM DE MEXICO", "car": "HONDA BR-V 2018", "plate": "", "phone": "3337253166", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MAIDA NOELIA DELGADO MURO", "car": "TOYOTA COROLLA 2015", "plate": "", "phone": "3111581783", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MANUEL ENRIQUE BERECOCHEA OLIMON", "car": "NISSAN FRONTIER 2022", "plate": "", "phone": "3221359225", "balance": 259.85, "code": "", "sucursal": "Bucerías"}, {"name": "MARCELA GAXIOLA", "car": "CHEVROLETTE CHEVY 2005", "plate": "", "phone": "5541778029", "balance": 470.51, "code": "", "sucursal": "Libramiento"}, {"name": "MARCO", "car": "TOYOTA CAMRY ", "plate": "", "phone": "3607916514", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "MARCO ANTONIO DIAZ", "car": "NISSAN TIIDA ", "plate": "", "phone": "3221182021", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MARCO ANTONIO LEYVA MANRIQUEZ", "car": "NISSAN NP300 2013", "plate": "", "phone": "6241419231", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "MARCO ANTONIO SANCHEZ PERZ", "car": "CHEVROLET TORNADO 2024", "plate": "PC2257B", "phone": "3117434785", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MARCO HERNANDEZ", "car": "TOYOTA PRIUS 2021", "plate": "UVJ874K", "phone": "5554705992", "balance": 98.35, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MARCON MARKETING CONSULTORIA", "car": "VW PASSAT 2016", "plate": "", "phone": "3314112447", "balance": 589.36, "code": "", "sucursal": "Bucerías"}, {"name": "MARCON MARKETING CONSULTORIA", "car": "VW PASSAT 2016", "plate": "", "phone": "", "balance": 589.36, "code": "", "sucursal": "Bucerías"}, {"name": "MARCOS BRAMBILA", "car": "VOLKSWAGEN BORA 2019", "plate": "", "phone": "3222941059", "balance": 566.94, "code": "", "sucursal": "Libramiento"}, {"name": "MARCUS MARIA VAN GEFFEN", "car": "RAM 4X4 ", "plate": "", "phone": "3222053901", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "MARIA AGUIRRE CASTAÑEDA", "car": "SUZUKI XL7 ", "plate": "", "phone": "3111386309", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "MARIA AUXILIADORA MARTINEZ SOTO", "car": "CHEVROLET SONIC 2017", "plate": "", "phone": "6621408312", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MARIA DEL REFUGIO GARCIA JIMENEZ", "car": "MAZDA CX5 2015", "plate": "", "phone": "3221322066", "balance": 1450.71, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MARIA DEL ROSARIO PEREZ SANCHEZ", "car": "KIA RIO 2018 ", "plate": "RGX8688", "phone": "3222943721", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MARIA FERNANDA BUENROSTRO ALVAREZ", "car": "CHEVROLET AVEO 2020", "plate": "", "phone": "3221903818", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MARIA GUADALUPE BERNAL CAMPOS", "car": "3221011106", "plate": "", "phone": "", "balance": 0, "code": "", "sucursal": "Libramiento"}, {"name": "MARIA OPTULIA", "car": "322", "plate": "", "phone": "10361053", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "MARIANA PAULA CATTANEO MELLO", "car": "NISSAN XTRAIL 2004", "plate": "", "phone": "3222940011", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MARIANA VALDESPINO", "car": "CHEVROLET SPARK 2015", "plate": "", "phone": "6692405871", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "MARIBEL GOMEZ NAVA", "car": "CHEVROLET MONTANA 2024", "plate": "", "phone": "3221897962", "balance": 87.47, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MARINA GARCIA HERNANDEZ", "car": "-", "plate": "", "phone": "3221531940", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MARIO GONZALEZ FLORES", "car": "FORD SUPER DUTY 2017", "plate": "PF09809", "phone": "3115299135", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "MARIO NASSER", "car": "TOYOTA RAV4 2010", "plate": "", "phone": "3222891681", "balance": 2623.72, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MARISELA MUÑOZ", "car": "HONDA CRV 2007", "plate": "", "phone": "3221110033", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MARISOL AGUILERA", "car": "INFINITY QX602019", "plate": "", "phone": "4777650017", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MARISOL SEDANO", "car": "NISSAN MARCH 2012", "plate": "", "phone": "3221836814", "balance": 111.19, "code": "", "sucursal": "Libramiento"}, {"name": "MARTHA COVARRUBIAS", "car": "TOYOTA COROLLA CROSS 2025", "plate": "", "phone": "3221377811", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MARTIN DELGADO", "car": "WV POINTER 2004", "plate": "", "phone": "3222743852", "balance": 498.22, "code": "", "sucursal": "Libramiento"}, {"name": "MARTIN DOMINGUEZ", "car": "NISSAN FRONTIER 2013", "plate": "", "phone": "3221513228", "balance": 0, "code": "", "sucursal": "Libramiento"}, {"name": "MATIAS VERDIN HERAS", "car": "JEPP WRANGLER ", "plate": "", "phone": "3221331733", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MAURICIO VENEGAS", "car": "KIA K3 2021", "plate": "", "phone": "3232836528", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MAYRA VIANNEY JARERO DOMINGUEZ", "car": "CHEVROLET BEAT 2019", "plate": "", "phone": "3221736443", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MELISSA WOO", "car": "NISSAN XTRAIL 2016", "plate": "", "phone": "3221353553", "balance": 633.38, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MEROA", "car": "CHEVROLET CAPTIVA 2024", "plate": "", "phone": "3221822107", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MICHAEL CAHILL", "car": "NISSAN NOTE 2014", "plate": "", "phone": "3221825615", "balance": 566.94, "code": "", "sucursal": "Libramiento"}, {"name": "MICHAEL LEAL", "car": "FORD FUSION 2016", "plate": "RFH309B", "phone": "5136026544", "balance": 144.75, "code": "", "sucursal": "Bucerías"}, {"name": "MICHAEL MALINAK", "car": "NISSAN FRONTIER 2025", "plate": "", "phone": "5094758088", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MIGUEL ALEGRE ROJO", "car": "TOYOTA RAV4 2017", "plate": "", "phone": "3221414335", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "MIGUEL ANGEL BAHENA MATA", "car": "FORD BRONCO ", "plate": "", "phone": "3227286950", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MIGUEL ANGEL DELGADILLO BUCIO", "car": "HONDA ACCORD 2007", "plate": "", "phone": "3221743888", "balance": 123.1, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MIGUEL ANGEL GUTIERREZ CEREZO", "car": "CHEVOLETTE SPARK 2018", "plate": "", "phone": "5241516784", "balance": 35.94, "code": "SIN", "sucursal": "Libramiento"}, {"name": "MIGUEL ANGEL OLVERA RAZON", "car": "HYUNDAI GRAND I10 2017", "plate": "", "phone": "3312981250", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MIGUEL CABRERA", "car": "MAZDA CX-30 2025", "plate": "", "phone": "3221402770", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MIGUEL CORTES", "car": "MITSUBISHI LANCENGTS 2008 ", "plate": "", "phone": "0014257382181", "balance": 0, "code": "ZLD01", "sucursal": "Nuevo Vallarta"}, {"name": "MIGUEL PAMPLONA", "car": "FORD LOBO 2018", "plate": "", "phone": "3227799243", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MIGUEL PASIUK", "car": "JEEP WRANGLER 2017", "plate": "", "phone": "0019525945047", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MIGUEL RODRIGUEZ AGUILAR", "car": "JEEP COMPASS 2016", "plate": "", "phone": "3314629770", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MIGUEL RODRIGUEZ.", "car": "TOYOTA COROLLA 2016", "plate": "RGE320B", "phone": "", "balance": 149.71, "code": "", "sucursal": "Bucerías"}, {"name": "MIGUEL SANCHEZ,", "car": "FORD ECOSPORT 2016", "plate": "", "phone": "3221995888", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "MIGUEL ZARAGOZA", "car": "VW VENTO 2019", "plate": "", "phone": "3221076021", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MIKE WIELAND", "car": "KIA SORENTO 2019", "plate": "72KFA", "phone": "0018315667456", "balance": 663.26, "code": "", "sucursal": "Bucerías"}, {"name": "MILTON ROSAS", "car": "TOYOTA RVA4 2015", "plate": "", "phone": "9989372440", "balance": 262.67, "code": "", "sucursal": "Libramiento"}, {"name": "MIRANDA MAGAÑA", "car": "JEEP COMPASS", "plate": "", "phone": "6194509246", "balance": 142.04, "code": "", "sucursal": "Bucerías"}, {"name": "MOISES OCAMPO FLORES", "car": "NISSAN FRONTIER 2020", "plate": "", "phone": "", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MONICA GARCIA", "car": "LEXUS RX350 2008", "plate": "", "phone": "5551059408", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MONICA GODICAK", "car": "HONDA CRV 2014", "plate": "", "phone": "3221175136", "balance": 498.22, "code": "SIN", "sucursal": "Libramiento"}, {"name": "MONICA MINERVA ROMERO OROZCO", "car": "HYUNDAI CRETA 2022", "plate": "", "phone": "3222165461", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "MONIQUE GIGGY", "car": "MERCEDES GL450 2024", "plate": "", "phone": "3224296880", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "NAZARIO DE LEON", "car": "3221046491", "plate": "", "phone": "", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "NEIL HALL", "car": "CHEVROLET SUBURBAN ", "plate": "", "phone": "2509839896", "balance": 110.19, "code": "", "sucursal": "Bucerías"}, {"name": "NESTOR HUGO GONZALEZ", "car": "VW GOL 2015", "plate": "FTL2129", "phone": "3223182206", "balance": 80.19, "code": "QM-33028BC", "sucursal": "Bucerías"}, {"name": "NICHOLAS SCOTT", "car": "MERCEDEZ", "plate": "", "phone": "3221401865", "balance": 19.81, "code": "SIN", "sucursal": "Libramiento"}, {"name": "NOEL MEDINA PADILLA", "car": "TOYOTA HILUX ", "plate": "", "phone": "3221393747", "balance": 262.67, "code": "", "sucursal": "Libramiento"}, {"name": "NOEMI ARAIZA TOLEDO", "car": "MAZDA CX-9 2021", "plate": "", "phone": "3221356753", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "NOHEMI ENCARNACION GONZALEZ", "car": "NISSAN XTRAIL 2020", "plate": "", "phone": "3223197544", "balance": 534.46, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "NOMISIM", "car": "NISSAN URVAN 2024", "plate": "", "phone": "", "balance": 0, "code": "", "sucursal": "Libramiento"}, {"name": "NOMISIM", "car": "NISSAN URVAN 2024", "plate": "", "phone": "10311053", "balance": 498.22, "code": "", "sucursal": "Libramiento"}, {"name": "NORA CASTELLANOS", "car": "NISSAN SENTRA 2016", "plate": "", "phone": "3221373281", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "NORBERTO HERNANDEZ", "car": "VW JETTA 2025", "plate": "", "phone": "3112697813", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "NORMA MARLENE LIVIER MACHUCA MEZA", "car": "FORD SCAPE 2002", "plate": "", "phone": "3221460987", "balance": 0, "code": "", "sucursal": "Libramiento"}, {"name": "OCTAVIO OLVERA", "car": "HYUNDAI SONATA 2015", "plate": "", "phone": "3223233903", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "OLGA CARRILLO GUZMAN", "car": "GMC DENALI SIERRA 2019", "plate": "", "phone": "3227794099", "balance": 369.97, "code": "ZLP56", "sucursal": "Nuevo Vallarta"}, {"name": "OMAR GUTIERREZ", "car": "CHEVROLET SAAB 2002 2.0 TURBO", "plate": "RFF791A", "phone": "3221355426", "balance": 129.23, "code": "ZLL01", "sucursal": "Bucerías"}, {"name": "OSCAR CHAVEZ", "car": "TOYOTA COROLLA 2005", "plate": "", "phone": "3221115976", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "OSCAR HERNANDEZ", "car": "VW JETTA 2017", "plate": "", "phone": "3221169110", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "OSWIN MOLLER", "car": "TOYOTA HIGHLANDER 2024", "plate": "RFH442B", "phone": "4777630063", "balance": 592.8, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "PABLO CONRAD", "car": "FORD LOBO 2019", "plate": "", "phone": "3221058051", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "PABLO LEON VILLASEÑOR", "car": "VOLVO XC40 2020", "plate": "", "phone": "3312808904", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "PABLO ORTEGA DIAZ", "car": "CHEVROLET COLORADO 2016", "plate": "", "phone": "0015625448205", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "PASOS ADELANTE CENTRO MULTISENSORIAL DE PUERTO VALLARTA SC", "car": "TOYOTA PRIUS 2021", "plate": "", "phone": "3221023341", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "PATRICIA BILBAO", "car": "CHEVROLET AVEO 2025", "plate": "", "phone": "4497698351", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "PAUL BENTZ", "car": "FORD TERRITORY 2024", "plate": "", "phone": "3221466648", "balance": 220.22, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "PAUL LAURENCE", "car": "NISSAN VERSA 2017", "plate": "", "phone": "1255704923", "balance": 121.46, "code": "SIN", "sucursal": "Libramiento"}, {"name": "PAUL LIONS SELLERIER", "car": "CHEVROLET TAHOE 2015", "plate": "", "phone": "3338453951", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "PAUL ROWLES", "car": "KIA SPORTAGE ", "plate": "", "phone": "3222970433", "balance": 81.09, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "PAUL VENTURA ZUÑIGA", "car": "NISSAN SENTRA 2021", "plate": "", "phone": "3111584491", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "PEDRO LIZALDE BLANCO", "car": "0", "plate": "", "phone": "6182938909", "balance": 447.36, "code": "", "sucursal": "Libramiento"}, {"name": "PEDRO PABLO SANCHEZ ZEPEDA", "car": "CHEVROLET SUBURBAN 2016", "plate": "", "phone": "3221829181", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "PIERRE PIECK", "car": "BMW X3 2004", "plate": "", "phone": "3333680349", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "PILAR PERCIAVALLE", "car": "JEEP COMPASS 2022", "plate": "", "phone": "3221358302", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "PLAYA ESCONDIDA SAYULITA", "car": "JAC FRISON TG 2024", "plate": "", "phone": "3221082832", "balance": 950.01, "code": "", "sucursal": "Bucerías"}, {"name": "PROLAWMEX", "car": "MITSUBISHI L200 2014", "plate": "", "phone": "3222212588", "balance": 2045.09, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "PROMOTORA Y ARRENDADORA EL VERGEL", "car": "NISSAN NP300 FRONTIER 2019", "plate": "", "phone": "3338081444", "balance": 2643.61, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "PUNTA BANDERA GM", "car": "CHEVROLET SUBUEBAN HIGH COUNTRY 2021", "plate": "68RE1G", "phone": "3223688676", "balance": 0, "code": "ZLQ05", "sucursal": "Bucerías"}, {"name": "R12R CORP", "car": "0", "plate": "", "phone": "3221577866", "balance": 447.36, "code": "", "sucursal": "Libramiento"}, {"name": "RAFAEL QUEZADA", "car": "NISSAN SENTRA 2017", "plate": "", "phone": "9841803006", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "RALPH E DESLAURIERS", "car": "HONDA CR-V 2005", "plate": "", "phone": "8022332563", "balance": 0, "code": "", "sucursal": "Libramiento"}, {"name": "RAMIRO CORTES", "car": "NISSAN FRONTIER 2023", "plate": "", "phone": "3221357915", "balance": 23.37, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "RAMSES MORA", "car": "HONDA CRV 2016", "plate": "", "phone": "3221329517", "balance": 262.67, "code": "SIN", "sucursal": "Libramiento"}, {"name": "RAYMOND LEVASSEUR", "car": "FORD EXPLORER ", "plate": "", "phone": "3334927706", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "REGINA ALVAREZ VIZCARRA", "car": "MINI COOPER 2011 ", "plate": "", "phone": "3337875279", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "REGINA GARCIA DE ALBA", "car": "3221427207", "plate": "", "phone": "10361053", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "REMIGIO IGNACIO RIOS", "car": "CHEVROLET BEAT 2019", "plate": "", "phone": "3221052715", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "RENO PEREZ PONCE", "car": "FORD IKON 2007", "plate": "", "phone": "3221050175", "balance": 498.22, "code": "", "sucursal": "Libramiento"}, {"name": "RICARDO CORTES", "car": "CHRYSLER TOWN COUNTRY", "plate": "EAR050B", "phone": "3328237506", "balance": 0, "code": "N2", "sucursal": "Bucerías"}, {"name": "RICARDO JOSUE VILLASEÑOR ARECHIGA", "car": "SUZUKI JIMAYALL GRIP 2022", "plate": "", "phone": "3222781881", "balance": 566.94, "code": "", "sucursal": "Libramiento"}, {"name": "RICARDO VILLASEÑOR LLAMAS", "car": "HYUNDAI CRETA 2020", "plate": "", "phone": "3221685156", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "RICARDO VILLASEÑOR VILLANUEVA", "car": "MAZDA CX5 2018", "plate": "", "phone": "3224298259", "balance": 660.21, "code": "", "sucursal": "Bucerías"}, {"name": "RICHARD ALEXIS GARCIA MADERA", "car": "DODGE ATTITUDE GT 2025", "plate": "", "phone": "3222317498", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "RICHARD CASTILLO MARTINEZ", "car": "CHEVROLET TRACKER 2011", "plate": "", "phone": "3221350119", "balance": 931.43, "code": "", "sucursal": "Bucerías"}, {"name": "RIGOBERTO VARGAS", "car": "TOYOTA HIACE ", "plate": "", "phone": "3221821367", "balance": 162.19, "code": "", "sucursal": "Bucerías"}, {"name": "ROBERTO CELIS", "car": "MAZDA CX5 2021", "plate": "", "phone": "3310968592", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ROBERTO DOMINGUEZ", "car": "NISSAN MARCH 2014", "plate": "", "phone": "3223814868", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "ROBERTO MELENDEZ", "car": "TOYOTA HIACE 2007", "plate": "JSR9029", "phone": "3221328825", "balance": 121.46, "code": "", "sucursal": "Libramiento"}, {"name": "ROBERTO SOLIS ALCAZAR", "car": "JEEP WRANGLER 2018", "plate": "", "phone": "3223020443", "balance": 307.47, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "RODRIGO AMIEVA", "car": "2980474", "plate": "", "phone": "", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "RODRIGO CRUZ PEREZ", "car": "NISSAN FRONTIER 2023", "plate": "", "phone": "3221169667", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "RODRIGO PELAEZ", "car": "KIA SORENTO 2013", "plate": "", "phone": "3331576635", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "RODRIGO RUIZ...", "car": "DODGE JOURNEY", "plate": "", "phone": "8721777048", "balance": 40.69, "code": "", "sucursal": "Bucerías"}, {"name": "RODRIGO SANCHEZ NAVARRO", "car": "KIA SONET 2025", "plate": "", "phone": "3334408117", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "ROGELIO COLMENARES ALENCASTER", "car": "TOYOTA TACOMA 2006", "plate": "", "phone": "3222747589", "balance": 447.36, "code": "", "sucursal": "Libramiento"}, {"name": "ROMAN CAMACHO", "car": "NISSAN VERSA 2025", "plate": "", "phone": "3221164055", "balance": 145.3, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ROMARIO CAMACHO", "car": "FORD RANGER 2016", "plate": "", "phone": "3223017189", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "RON SMITH", "car": "HONDA CRV 2022", "plate": "", "phone": "3222083617", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "RUBEN GONZALEZ.", "car": "HONDA CIVIC 2014", "plate": "JLV4899", "phone": "3313637882", "balance": 133.48, "code": "", "sucursal": "Bucerías"}, {"name": "S&L PORTAFOLIO", "car": "HYUNDAI TUCSON 2023", "plate": "", "phone": "3221287330", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "SABRINA J TORREBLANCA", "car": "MAZDA CX5 2021 ", "plate": "", "phone": "3221998196", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "SALVADOR GOMEZ", "car": "VOLVO XC90 2025", "plate": "", "phone": "3324008540", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "SAMUEL TEJEDA", "car": "VW VIRTUS 2022", "plate": "", "phone": "3112705238", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "SANDRA ALICIA CONTRERAS DIAZ", "car": "JEEP WRANGLER 2015", "plate": "", "phone": "3224298674", "balance": 0, "code": "N2", "sucursal": "Nuevo Vallarta"}, {"name": "SANDRA PEREZ RODRIGUEZ", "car": "HAVAL JOLION 2024", "plate": "", "phone": "3227795296", "balance": 498.22, "code": "", "sucursal": "Libramiento"}, {"name": "SARA NATALIA VEGA TORRES", "car": "JEEP RENEGADE 2016", "plate": "", "phone": "3221396163", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "SARA VICTORIA GUTIERREZ MORALES", "car": "0", "plate": "", "phone": "3222940263", "balance": 121.46, "code": "", "sucursal": "Libramiento"}, {"name": "SAUBER HALTEN", "car": "NISSAN X-TRAIL ", "plate": "", "phone": "3222057997", "balance": 33.97, "code": "", "sucursal": "Bucerías"}, {"name": "SAUL NAVARRO HERNANDEZ", "car": "CHEVROLET TRAIL BLAZER 2003", "plate": "", "phone": "322365813", "balance": 915.87, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "SECRETARIA DE SEGURIDAD Y PROTECCION CIUDADANA ORGANO ADMINISTRATIVO DESCONCENTRADO GUARDIA NACIONAL", "car": "DODGE CHARGER RT 2022", "plate": "", "phone": "5554814300", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "SELENE RUIZ", "car": "HONDA HRV 2016", "plate": "", "phone": "3222926696", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "SERGIO", "car": "CHEVROLET TRAVERSE 2020", "plate": "", "phone": "3222420397", "balance": 1928.91, "code": "", "sucursal": "Bucerías"}, {"name": "SERGIO ANDRADE DIAZ", "car": "NISSAN VERSA 2019", "plate": "", "phone": "3221524728", "balance": 262.67, "code": "", "sucursal": "Libramiento"}, {"name": "SERGIO ANTONIO REYES NUÑEZ", "car": "TOYOTA TACOMA", "plate": "", "phone": "3191151288", "balance": 498.22, "code": "", "sucursal": "Libramiento"}, {"name": "SERGIO GUTIERREZ", "car": "FORD EXPLORER 2017", "plate": "", "phone": "", "balance": 130.22, "code": "", "sucursal": "Bucerías"}, {"name": "SERGIO GUTIERREZ", "car": "CHEVROLET SILVERADO 2500 2018", "plate": "", "phone": "3222420397", "balance": 1928.91, "code": "", "sucursal": "Bucerías"}, {"name": "SERGIO VELASCO TAPIA", "car": "TOYOTA TACOMA", "plate": "", "phone": "3221355014", "balance": 156.34, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "SERVICIOS OPERATIVOS LOS CABOS", "car": "NISSAN URVAN 2025", "plate": "", "phone": "6381285253", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "SHANE KOLODY", "car": "TOYOTA COROLLA 2006", "plate": "766NNM", "phone": "3221340873", "balance": 418.76, "code": "", "sucursal": "Bucerías"}, {"name": "SHANNON LATIMER", "car": "DODGE DURANGO 2001", "plate": "", "phone": "3221941147", "balance": 116.38, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "SHERRY LOGAN", "car": "S N", "plate": "", "phone": "10311053", "balance": 498.22, "code": "", "sucursal": "Libramiento"}, {"name": "SHERRY LYNN ROSS GARRETT", "car": "TOYOTA FJ CRUISER 2007", "plate": "MPM1014", "phone": "3221239096", "balance": 431.91, "code": "", "sucursal": "Bucerías"}, {"name": "SIMON ROBLES", "car": "CHEVROLET SILVERADO 1998", "plate": "", "phone": "3221121487", "balance": 111.9, "code": "", "sucursal": "Bucerías"}, {"name": "SITI SMART SYSTEMS", "car": "NISSAN URVAN 2022", "plate": "", "phone": "3292980914", "balance": 2511.45, "code": "", "sucursal": "Bucerías"}, {"name": "SOILA MARIBEL MARILES", "car": "322 300 1292", "plate": "", "phone": "", "balance": 0, "code": "", "sucursal": "Bucerías"}, {"name": "SOLUCIONES T0TA1 TICS", "car": "KIA SELTOS 2022", "plate": "", "phone": "3221756508", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "STEPHANIE TOLVO", "car": "KIA SOUL 2022", "plate": "", "phone": "3224296521", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "STONE CASAS Y CONSTRUCCIONES", "car": "KIA SELTOS 2023", "plate": "", "phone": "3222090790", "balance": 434.84, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "SUSANA DEL ROSARIO FIMBRES CHAVEZ", "car": "HONDA CRV 2022", "plate": "", "phone": "3222940491", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "TEK-FINAUTO", "car": "BYD KING 2025", "plate": "", "phone": "9841333839", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "TERESA HERNANDEZ MARTINEZ", "car": "CHEVROLET AVEO 2018", "plate": "", "phone": "3221519164", "balance": 187.66, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "TERESA LEON AGUILAR", "car": "CHEVROLET AVEO 2016", "plate": "", "phone": "3221885455", "balance": 1403.27, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "TERRY PREMO", "car": "TOYOTA RAV4 2018", "plate": "", "phone": "3222442065", "balance": 1036.41, "code": "", "sucursal": "Bucerías"}, {"name": "THOMAS ROESSLER", "car": "JEEP PATRIOT 2013", "plate": "", "phone": "3221094528", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "TIERRA HUICHOL", "car": "PEUGEOT 5008 2023", "plate": "", "phone": "3221817602", "balance": 262.67, "code": "", "sucursal": "Libramiento"}, {"name": "TIM BAUBIE", "car": "FORD SCAPE 2019", "plate": "", "phone": "4169612038", "balance": 498.22, "code": "", "sucursal": "Libramiento"}, {"name": "TIM STYCHIN", "car": "TOYOTA RAV4 2017", "plate": "JNE3449", "phone": "3227797933", "balance": 131.84, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "TRANSPORTES JUAN PABLO", "car": "0", "plate": "", "phone": "3951191274", "balance": 0, "code": "", "sucursal": "Libramiento"}, {"name": "UBALDO FLORES", "car": "TOYOTA SIENNA 2017", "plate": "", "phone": "4761073176", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ULISES SEVILLA", "car": "BMW X1 2022", "plate": "", "phone": "3221887783", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "VICTOR AISSA", "car": "HONDA CRV 2014 ", "plate": "", "phone": "00141564011657", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "VICTOR BAUTISTA", "car": "CHEVROLET COLORADO 2017", "plate": "", "phone": "3227797697", "balance": 648.5, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "VICTOR MANUEL NUÑEZ RAMIREZ", "car": "TOYOTA RAV4 2023", "plate": "", "phone": "3221371211", "balance": 112.68, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "VICTOR RENTERIA CRUZ", "car": "HONDA PILOT 2017", "plate": "", "phone": "3227797067", "balance": 566.94, "code": "SIN", "sucursal": "Libramiento"}, {"name": "VICTOR TAPIA", "car": "BMW  2016", "plate": "JRR4031", "phone": "3336771158", "balance": 0, "code": "N2", "sucursal": "Bucerías"}, {"name": "VIRGILIO TAMEZ", "car": "NISSAN TITAN 2006", "plate": "", "phone": "3222975637", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "VIVEROS LOS ASADEROS", "car": "NISSAN NP300 2022", "plate": "", "phone": "3221355971", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "WAYNE ZITTEL", "car": "KIA SPORTAGE", "plate": "", "phone": "", "balance": 7.69, "code": "", "sucursal": "Bucerías"}, {"name": "XAVIER ANGELES LARIOS", "car": "TOYOTA HILUX", "plate": "", "phone": "5566985703", "balance": 0, "code": "", "sucursal": "Libramiento"}, {"name": "YADIRA RODRIGUEZ", "car": "HONDA CITY 2022", "plate": "", "phone": "3221570909", "balance": 0, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "YAEL QUIROZ", "car": "MAZDA 3  2018", "plate": "", "phone": "3221483515", "balance": 498.22, "code": "", "sucursal": "Libramiento"}, {"name": "YAZMIN  GIZEH RAMIREZ CAMACHO", "car": "NISSAN FRONTIER 2020", "plate": "", "phone": "3221113129", "balance": 199.71, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "YESICA YAZMIN MARTINEZ URCIAGA", "car": "TOYOTA RAV4 2022 ", "plate": "", "phone": "3221822457", "balance": 549.28, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "YOLANDA JAIME", "car": "TOYOTA COROLLA 2004", "plate": "", "phone": "3223498996", "balance": 459.8, "code": "", "sucursal": "Nuevo Vallarta"}, {"name": "ZURIEL RUBALCABA", "car": "FORD ECOSPORT 2005", "plate": "", "phone": "3222208025", "balance": 447.36, "code": "", "sucursal": "Libramiento"}];
+const SERVICES = {"AL1E": {"desc": "ALINEACIÓN DE 1 EJE DELANTERO", "price": 487.2, "category": "SERV LLANTERA"}, "AL2E": {"desc": "ALINEACIÓN DE 2 EJES (DELANTERO Y TRASERO) SOLO AJUSTE DE MEDIDAS", "price": 696.0, "category": "SERV LLANTERA"}, "BA": {"desc": "BALANCEO DE 1 RUEDA", "price": 87.0, "category": "SERV LLANTERA"}, "BAE": {"desc": "BALANCEO DE 1 RUEDA MAYOR A RIN 18", "price": 90.82799999999999, "category": "SERV LLANTERA"}, "MDL": {"desc": "DESMONTAJE / MONTAJE POR RIN BLINDADO", "price": 1055.9596, "category": "SERV LLANTERA"}, "ROT": {"desc": "ROTACIÓN DE 4 RUEDAS", "price": 108.0, "category": "SERV LLANTERA"}, "N2": {"desc": "TAPON METALICO PARA VALVULA NITROGENO N2", "price": 9.99, "category": "GENERAL"}, "TV-413": {"desc": "VALVULA DE HULE P/AUTO 1 1/4 LARGO", "price": 6.99, "category": "GENERAL"}, "N2+": {"desc": "INFLADO CON NITROGENO DE 1 LLANTA MAYOR A RIN 18", "price": 92.8, "category": "SERV LLANTERA"}, "PC": {"desc": "PAQUETE ABR", "price": 841.0, "category": "SERV LLANTERA"}, "BDB": {"desc": "BALERO DOBLE SIN CAMBIAR LA MAZA", "price": 432.0, "category": "SUSPENSION"}, "BM": {"desc": "BALERO MAZA", "price": 432.0, "category": "SUSPENSION"}, "MZ": {"desc": "MAZA CONSIDERANDO EL CAMBIO DEL BALERO DOBLE", "price": 60.0, "category": "SUSPENSION"}, "BMD": {"desc": "BALERO MAZA (DIFICIL)", "price": 864.0, "category": "SUSPENSION"}, "VD": {"desc": "VARILLA DE DIRECCION", "price": 432.0, "category": "SUSPENSION"}, "VDD": {"desc": "VARILLA DE DIRECCION  (DIFICIL)", "price": 648.0, "category": "SUSPENSION"}, "TD": {"desc": "TERMINAL DE DIRECCION", "price": 216.0, "category": "SUSPENSION"}, "TDD": {"desc": "TERMINALES DE DIRECCION (DIFICIL)", "price": 432.0, "category": "SUSPENSION"}, "BIO": {"desc": "BIRLO C/U", "price": 180.0, "category": "SUSPENSION"}, "BID": {"desc": "BIRLO C/U DIFICIL (DESMONTANDO MAZA)", "price": 432.0, "category": "SUSPENSION"}, "SACAR BIRLO DE SEGURIDAD C/U": {"desc": "60", "price": 499.0, "category": "GENERAL"}, "STRUT": {"desc": "STRUT  C/U", "price": 324.0, "category": "SUSPENSION"}, "STRUTD": {"desc": "STRUT DIFICIL C/U", "price": 432.0, "category": "SUSPENSION"}, "AM": {"desc": "AMORTIGUADOR C/u", "price": 180.0, "category": "SUSPENSION"}, "JAMA": {"desc": "AMORTIGUADOR DE AIRE C/U", "price": 864.0, "category": "SUSPENSION"}, "CMC": {"desc": "CARTUCHO MACPHERSON C/U", "price": 432.0, "category": "SUSPENSION"}, "JRD": {"desc": "JUEGO DE RESORTES DEL (POR PAR)", "price": 864.0, "category": "SUSPENSION"}, "JRDD": {"desc": "JGO DE RESORTES DELANTEROS O TRASEROS (DIFICIL POR PAR)", "price": 864.0, "category": "SUSPENSION"}, "BTR": {"desc": "BARRA DE TORSION POR LADO", "price": 648.0, "category": "SUSPENSION"}, "BAM": {"desc": "BASE DE AMORTIGUADOR", "price": 216.0, "category": "SUSPENSION"}, "BAMSA": {"desc": "BASE DE AMORTIGUADOR", "price": 499.0, "category": "SUSPENSION"}, "BAMD": {"desc": "BASE DE AMORTIGUADOR (DIFICIL)", "price": 324.0, "category": "SUSPENSION"}, "BAMDSA": {"desc": "BASE DE AMORTIGUADOR (DIFICIL)", "price": 499.0, "category": "SUSPENSION"}, "AMD": {"desc": "AMORTIGUADOR DE DIRECCION", "price": 324.0, "category": "SUSPENSION"}, "AMC": {"desc": "AMORTIGUADOR DE COFRE, CAJUELA O 5TA PUERTA", "price": 216.0, "category": "SUSPENSION"}, "CSTRUT": {"desc": "CORREDERAS A STRU´S POR LADO", "price": 432.0, "category": "SUSPENSION"}, "CJH": {"desc": "CUBRE POLVO DE JUNTA HOMOCINETICA", "price": 360.0, "category": "SUSPENSION"}, "JH": {"desc": "JUNTA HOMOCINETICA", "price": 324.0, "category": "SUSPENSION"}, "FC": {"desc": "FLECHA COMPLETA", "price": 648.0, "category": "SUSPENSION"}, "JGBES": {"desc": "JGO DE GOMAS DE BARRA ESTABILIZADORA (POR PAR)", "price": 288.0, "category": "SUSPENSION"}, "JGBESD": {"desc": "JGO DE GOMAS DE BARRA ESTABILIZADORA DIFICIL (POR PAR)", "price": 432.0, "category": "SUSPENSION"}, "HO": {"desc": "HORQUILLA", "price": 432.0, "category": "SUSPENSION"}, "HOD": {"desc": "HORQUILLA (DIFICIL)", "price": 648.0, "category": "SUSPENSION"}, "HCR": {"desc": "HORQUILLA INFERIOR CON RESORTE", "price": 499.0, "category": "SUSPENSION"}, "RO": {"desc": "ROTULA", "price": 288.0, "category": "SUSPENSION"}, "ROD": {"desc": "ROTULA (DIFICIL)", "price": 432.0, "category": "SUSPENSION"}, "BES": {"desc": "BARRA ESTABILIZADORA", "price": 432.0, "category": "SUSPENSION"}, "JBYPD": {"desc": "JGO DE BUJES Y PERNOS DE DIRECCION EJE DELANTERO", "price": 1296.0, "category": "SUSPENSION"}, "MS": {"desc": "MANGO DE SUSPENSION", "price": 648.0, "category": "SUSPENSION"}, "CD": {"desc": "CAJA DE DIRECCION", "price": 864.0, "category": "SUSPENSION"}, "CRM": {"desc": "CREMALLERA", "price": 1296.0, "category": "SUSPENSION"}, "TES": {"desc": "TORNILLO ESTABILIZADOR", "price": 144.0, "category": "SUSPENSION"}, "JBUH": {"desc": "JGO DE BUJES DE HORQUILLA POR PAR", "price": 648.0, "category": "SUSPENSION"}, "BUH": {"desc": "BUJE DE HORQUILLA C/U", "price": 499.0, "category": "SUSPENSION"}, "JBUHD": {"desc": "JGO DE BUJES DE HORQUILLA POR PAR (DIFICIL)", "price": 864.0, "category": "SUSPENSION"}, "BUHD": {"desc": "BUJE DE HORQUILLA  C/U (DIFICIL)", "price": 499.0, "category": "SUSPENSION"}, "JBUHCR": {"desc": "BUJE DE HORQUILLA INFERIOR CUANDO LA HORQUILLA  SOPORTA EL RESORTE", "price": 1296.0, "category": "SUSPENSION"}, "BUF": {"desc": "BUJE FLOTANTE", "price": 432.0, "category": "SUSPENSION"}, "BUFD": {"desc": "BUJE FLOTANTE (DIFICIL)", "price": 90.0, "category": "SUSPENSION"}, "JBUMU": {"desc": "JGO DE BUJES DE MUELLE POR PAR (NISSAN ESTAQUITAS)", "price": 648.0, "category": "SUSPENSION"}, "NABT": {"desc": "NIVELAR ALTURA (BARRAS DE TORSION) AMBOS LADOS", "price": 432.0, "category": "SUSPENSION"}, "CR": {"desc": "CRUCETA", "price": 432.0, "category": "SUSPENSION"}, "JEX": {"desc": "JGO DE 2 EXCENTRICOS PARA ALINEACION (POR LADO)", "price": 432.0, "category": "SUSPENSION"}, "BAU": {"desc": "BRAZO AUXILIAR", "price": 324.0, "category": "SUSPENSION"}, "BAUD": {"desc": "BRAZO AUXILIAR (DIFICIL)", "price": 648.0, "category": "SUSPENSION"}, "BPT": {"desc": "BRAZO PITMAN", "price": 360.0, "category": "SUSPENSION"}, "BAC": {"desc": "BARRA CENTRAL", "price": 576.0, "category": "SUSPENSION"}, "JGT": {"desc": "JGO GOMAS DE TIRANTE", "price": 432.0, "category": "SUSPENSION"}, "JGTD": {"desc": "JGO GOMAS DE TIRANTE (DIFICIL)", "price": 864.0, "category": "SUSPENSION"}, "CLUTCH": {"desc": "CLUTCH", "price": 180.0, "category": "GENERAL"}, "CLUTCHD": {"desc": "CLUTCH", "price": 260.0, "category": "GENERAL"}, "CCLUTCH": {"desc": "CLUTCH", "price": 60.0, "category": "GENERAL"}, "FRD": {"desc": "FRENOS DELANTEROS DISCO O TAMBOR", "price": 360.0, "category": "FRENOS"}, "FRENOS": {"desc": "DISCOS DE TAMBORES", "price": 499.0, "category": "GENERAL"}, "FRT": {"desc": "FRENOS TRASEROS DISCO O TAMBOR", "price": 360.0, "category": "FRENOS"}, "FRTD": {"desc": "FRENOS TRASEROS CON SISTEMA DOBLE (TAMBOR Y DISCO)", "price": 648.0, "category": "FRENOS"}, "LFR": {"desc": "LIQUIDO DE FRENOS", "price": 360.0, "category": "FRENOS"}, "LAFR": {"desc": "LIMPIEZA Y AJUSTE DE FRENOS", "price": 180.0, "category": "FRENOS"}, "HFR": {"desc": "HERRAJES POR LADO", "price": 324.0, "category": "FRENOS"}, "DFR": {"desc": "DISCOS DELANTEROS/TRASEROS", "price": 499.0, "category": "FRENOS"}, "RDT": {"desc": "RECTIFICADO DE DISCO O TAMBORES C/U", "price": 180.0, "category": "FRENOS"}, "RDTG": {"desc": "RECTIFICADO DE DISCO O TAMBOR GDES C/U", "price": 360.0, "category": "FRENOS"}, "BOS": {"desc": "BOSTER", "price": 864.0, "category": "FRENOS"}, "CFRM": {"desc": "CHICOTE DE FRENO DE MANO POR LADO", "price": 432.0, "category": "FRENOS"}, "MFR": {"desc": "MANGUERAS DE FRENOS", "price": 216.0, "category": "FRENOS"}, "BFR": {"desc": "BOMBA DE FRENOS (CILINDRO MAESTRO)", "price": 648.0, "category": "FRENOS"}, "CFRT": {"desc": "CILINDRO DE RUEDA POR LADO", "price": 216.0, "category": "FRENOS"}, "JLPS": {"desc": "JGO DE LIGAS Y/O PISTONES SENCILLOS DE CALIPER AMBOS LADOS", "price": 576.0, "category": "FRENOS"}, "JLPD": {"desc": "JGO DE LIGAS Y/O PISTONES DOBLES  DE CALIPER AMBOS LADOS", "price": 864.0, "category": "FRENOS"}, "LEB": {"desc": "LAVADO Y ENGRASADO DE BALEROS CONICOS (POR LADO)", "price": 180.0, "category": "FRENOS"}, "RR": {"desc": "RETEN DE RUEDA (POR LADO)", "price": 180.0, "category": "FRENOS"}, "ACF": {"desc": "ACEITE Y FILTRO", "price": 216.0, "category": "LUBRICACION"}, "JCTM": {"desc": "JUNTAS DE CARTER TRANS Y MOTOR", "price": 648.0, "category": "LUBRICACION"}, "TJC": {"desc": "TAPAS DE JUNTAS DE CARTER TRANS Y MOTOR (DIFICIL)", "price": 864.0, "category": "LUBRICACION"}, "IG": {"desc": "REVISION GENERAL", "price": 30.0, "category": "GENERAL"}, "AFC": {"desc": "AFINACION", "price": 120.0, "category": "GENERAL"}, "AF4": {"desc": "AFINACION", "price": 90.0, "category": "GENERAL"}, "AF6": {"desc": "AFINACION", "price": 120.0, "category": "GENERAL"}, "AF8": {"desc": "AFINACION", "price": 150.0, "category": "GENERAL"}, "AFD": {"desc": "AFINACION", "price": 180.0, "category": "GENERAL"}, "AFINACION": {"desc": "LAVADO DE MOTOR (EXTERIOR)", "price": 25.0, "category": "GENERAL"}, "BG": {"desc": "AFINACION", "price": 120.0, "category": "GENERAL"}, "BOMBA DE GASOLINA BAJANDO EL TANQUE": {"desc": "180", "price": 499.0, "category": "GENERAL"}, "BU": {"desc": "AFINACION", "price": 40.0, "category": "GENERAL"}, "BUD": {"desc": "AFINACION", "price": 90.0, "category": "GENERAL"}, "ES": {"desc": "AFINACION", "price": 30.0, "category": "GENERAL"}, "MOE": {"desc": "AFINACION", "price": 180.0, "category": "GENERAL"}, "FA": {"desc": "AFINACION", "price": 20.0, "category": "GENERAL"}, "FILTRO DE AIRE DE CABINA": {"desc": "RETIRAR Y REEMPLAZAR FILTRO DE CABINA", "price": 499.0, "category": "GENERAL"}, "FG": {"desc": "AFINACION", "price": 25.0, "category": "GENERAL"}, "FR": {"desc": "AFINACION", "price": 120.0, "category": "GENERAL"}, "CA": {"desc": "AFINACION", "price": 45.0, "category": "GENERAL"}, "LIB": {"desc": "AFINACION", "price": 60.0, "category": "GENERAL"}, "LCA": {"desc": "AFINACION", "price": 45.0, "category": "GENERAL"}, "BUM": {"desc": "SERV MOTOR", "price": 60.0, "category": "GENERAL"}, "BD": {"desc": "SERV MOTOR", "price": 180.0, "category": "GENERAL"}, "BDD": {"desc": "SERV MOTOR", "price": 300.0, "category": "GENERAL"}, "BAA": {"desc": "SERV MOTOR", "price": 40.0, "category": "GENERAL"}, "PT": {"desc": "SERV MOTOR", "price": 90.0, "category": "GENERAL"}, "CM": {"desc": "SERV MOTOR", "price": 300.0, "category": "GENERAL"}, "JTP": {"desc": "SERV MOTOR", "price": 60.0, "category": "GENERAL"}, "SM": {"desc": "SERV MOTOR", "price": 60.0, "category": "GENERAL"}, "SMD": {"desc": "SERV MOTOR", "price": 120.0, "category": "GENERAL"}, "TT": {"desc": "SISTEMA DE ENFRIAMIENTO", "price": 50.0, "category": "GENERAL"}, "TTD": {"desc": "SISTEMA DE ENFRIAMIENTO", "price": 180.0, "category": "GENERAL"}, "ME": {"desc": "SISTEMA DE ENFRIAMIENTO", "price": 30.0, "category": "GENERAL"}, "RA": {"desc": "SISTEMA DE ENFRIAMIENTO", "price": 60.0, "category": "GENERAL"}, "RAD": {"desc": "SISTEMA DE ENFRIAMIENTO", "price": 120.0, "category": "GENERAL"}, "DA": {"desc": "SISTEMA DE ENFRIAMIENTO", "price": 30.0, "category": "GENERAL"}, "BAG": {"desc": "SISTEMA DE ENFRIAMIENTO", "price": 120.0, "category": "GENERAL"}, "BAGD": {"desc": "SISTEMA DE ENFRIAMIENTO", "price": 200.0, "category": "GENERAL"}, "BT": {"desc": "SISTEMA DE ENFRIAMIENTO", "price": 20.0, "category": "GENERAL"}, "DEB": {"desc": "DIAGNOSTICO", "price": 60.0, "category": "GENERAL"}, "ST": {"desc": "DIAGNOSTICO", "price": 60.0, "category": "GENERAL"}, "TPS": {"desc": "DIAGNOSTICO", "price": 120.0, "category": "GENERAL"}, "MAP": {"desc": "DIAGNOSTICO", "price": 120.0, "category": "GENERAL"}, "IAC": {"desc": "DIAGNOSTICO", "price": 120.0, "category": "GENERAL"}, "SO": {"desc": "DIAGNOSTICO", "price": 120.0, "category": "GENERAL"}, "SPC": {"desc": "DIAGNOSTICO", "price": 120.0, "category": "GENERAL"}, "SPAL": {"desc": "DIAGNOSTICO", "price": 120.0, "category": "GENERAL"}, "STA": {"desc": "DIAGNOSTICO", "price": 120.0, "category": "GENERAL"}, "MAF": {"desc": "DIAGNOSTICO", "price": 120.0, "category": "GENERAL"}, "SD": {"desc": "DIAGNOSTICO", "price": 120.0, "category": "GENERAL"}, "EGR": {"desc": "DIAGNOSTICO", "price": 120.0, "category": "GENERAL"}, "ID": {"desc": "DIAGNOSTICO", "price": 180.0, "category": "GENERAL"}, "RPG": {"desc": "DIAGNOSTICO", "price": 120.0, "category": "GENERAL"}, "RPGD": {"desc": "DIAGNOSTICO", "price": 180.0, "category": "GENERAL"}, "CAMBIO DE LIMPIAPARABRISAS (POR PAR)": {"desc": "RETIRAR Y REEMPLAZAR LOS LIMPIAPARABRISAS", "price": 10.0, "category": "GENERAL"}, "BAT": {"desc": "BATERIA", "price": 216.0, "category": "ELECTRICO"}, "BAD": {"desc": "BATERIA ACCESO DIFICIL", "price": 324.0, "category": "ELECTRICO"}, "BO": {"desc": "BOBINA", "price": 324.0, "category": "ELECTRICO"}, "DSC": {"desc": "DIAGNOSTICO SISTEMA DE CARGA", "price": 180.0, "category": "ELECTRICO"}, "TB": {"desc": "TERMINAL DE BATERIA", "price": 172.8, "category": "ELECTRICO"}, "BI": {"desc": "BOBINA INDEPENDIENTE C/U", "price": 144.0, "category": "ELECTRICO"}, "JCB": {"desc": "JGO CABLES DE BUJIAS", "price": 288.0, "category": "ELECTRICO"}, "CBD": {"desc": "CAMBIO DE CABLES DE BUJIAS ACCESO DIFICIL", "price": 432.0, "category": "ELECTRICO"}, "ZLLM01-K": {"desc": "Cambio de Aceite 15W40 Mineral", "price": 950, "category": "LUBRICACION"}, "ZLLM02-K": {"desc": "Cambio de Aceite 5W30 Mineral", "price": 1100, "category": "LUBRICACION"}, "ZLLS01-K": {"desc": "Cambio de Aceite 5W30 Sintético", "price": 1650, "category": "LUBRICACION"}, "ZLA01-K": {"desc": "Paquete ABR", "price": 842, "category": "SERV LLANTERA"}, "ZLT23-K": {"desc": "Paquete Carretero 15W40", "price": 1400, "category": "LUBRICACION"}, "ZLT24-K": {"desc": "Paquete Carretero 5W30 Mineral", "price": 1550, "category": "LUBRICACION"}, "ZLT25-K": {"desc": "Paquete Carretero 5W30 Sintético", "price": 1750, "category": "LUBRICACION"}, "ZLB08-K": {"desc": "Servicio Mayor 15W40", "price": 2321, "category": "LUBRICACION"}, "ZLB13-K": {"desc": "Servicio Mayor 5W30 Sintético", "price": 1030, "category": "LUBRICACION"}, "ZLP07-K": {"desc": "Performance 5W30 Sintético", "price": 1730, "category": "LUBRICACION"}, "ZLQ04": {"desc": "Balanceo por Rueda (Rin Normal)", "price": 215, "category": "SERV LLANTERA"}, "ZLQ13": {"desc": "Alineación de un Eje", "price": 568, "category": "SERV LLANTERA"}, "ZLQ06": {"desc": "Balanceo por Rueda Mayor a Rin 17", "price": 270, "category": "SERV LLANTERA"}, "ZLQ07": {"desc": "Rotación 4 Ruedas", "price": 166, "category": "SERV LLANTERA"}, "ZLD01": {"desc": "Desmontaje/Montaje Rin 13-16", "price": 71, "category": "SERV LLANTERA"}, "ZLD02": {"desc": "Desmontaje/Montaje Rin 17-18", "price": 121, "category": "SERV LLANTERA"}, "ZLD03": {"desc": "Desmontaje/Montaje Rin 19/Run Flat", "price": 215, "category": "SERV LLANTERA"}, "ZLI01-K": {"desc": "Instalación Llanta Rin 13-16", "price": 71, "category": "SERV LLANTERA"}, "ZLA04-K": {"desc": "Paquete ABR Rin 17+", "price": 950, "category": "SERV LLANTERA"}, "ZLL01": {"desc": "Aceite Lubricante", "price": 500, "category": "LUBRICACION"}};
+
+/* ============================================================
+   ESTADO
+   ============================================================ */
+let db = [];
+let activityLog = [];
+let currentRole = 'Empleado';
+let activeFilter = '';
+let activeCat = '';
+let selectedIdx = -1;
+const STORAGE_KEY = 'michelin_crm_db';
+const LOG_KEY = 'michelin_crm_log';
+
+/* ============================================================
+   LOGIN
+   ============================================================ */
+let pin = "";
+function press(n){
+  if(pin.length>=4)return;
+  pin+=n; updateDots();
+  if(pin.length===4)setTimeout(checkPin,180);
+}
+function delPin(){pin=pin.slice(0,-1);updateDots();document.getElementById('pin-error').classList.remove('show')}
+function updateDots(){for(let i=0;i<4;i++)document.getElementById('d'+i).classList.toggle('filled',i<pin.length)}
+function checkPin(){
+  if(pin==='1234'){unlock('Empleado');return}
+  if(pin==='9999'){unlock('Admin');return}
+  document.getElementById('pin-error').classList.add('show');
+  setTimeout(()=>{pin="";updateDots()},700);
+}
+function unlock(role){
+  currentRole=role;
+  document.getElementById('login-screen').style.display='none';
+  const app=document.getElementById('app-container');
+  app.style.display='-webkit-flex'; app.style.display='flex';
+  app.style.flexDirection='column';
+  document.getElementById('role-badge').innerText=role;
+  if(role==='Admin')document.getElementById('role-dot').style.background='var(--yellow)';
+  init();
+}
+
+/* ============================================================
+   INIT & PERSISTENCE
+   ============================================================ */
+function loadDB(){
+  try{
+    const saved=localStorage.getItem(STORAGE_KEY);
+    if(saved){
+      const parsed=JSON.parse(saved);
+      if(parsed&&parsed.length>0){db=parsed;return}
+    }
+  }catch(e){}
+  db=[...DEFAULT_DB];
+  saveDB();
+}
+
+function saveDB(){
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(db))}
+  catch(e){toast('⚠️ Error al guardar datos')}
+}
+
+function loadLog(){
+  try{const s=localStorage.getItem(LOG_KEY);if(s)activityLog=JSON.parse(s)}
+  catch(e){}
+}
+function saveLog(){try{localStorage.setItem(LOG_KEY,JSON.stringify(activityLog.slice(0,50)))}catch(e){}}
+
+function init(){
+  loadDB();loadLog();
+  populateSelects();
+  renderStats();
+  renderFilterPills();
+  renderList();
+  renderServicesPage();
+  renderAdminStats();
+  renderActivityLog();
+}
+
+/* ============================================================
+   SELECTS
+   ============================================================ */
+function populateSelects(){
+  const selIds=['a-code','n-code','q-select'];
+  selIds.forEach(id=>{
+    const sel=document.getElementById(id);
+    sel.innerHTML='<option value="">-- Seleccionar --</option>';
+    Object.entries(SERVICES).forEach(([k,s])=>{
+      const o=document.createElement('option');
+      o.value=k; o.textContent=k+' · '+s.desc;
+      sel.appendChild(o);
+    });
+  });
+}
+
+/* ============================================================
+   STATS
+   ============================================================ */
+function renderStats(){
+  const wb=db.filter(c=>c.balance>0);
+  const total=db.reduce((a,c)=>a+(parseFloat(c.balance)||0),0);
+  const buc=db.filter(c=>c.sucursal==='Bucerías').length;
+  document.getElementById('stats-row').innerHTML=`
+    <div class="stat-card"><div class="stat-num">${db.length}</div><div class="stat-label">Clientes</div></div>
+    <div class="stat-card grn"><div class="stat-num">${wb.length}</div><div class="stat-label">Con saldo</div></div>
+    <div class="stat-card acc"><div class="stat-num">$${Math.round(total/1000)}k</div><div class="stat-label">Monedero</div></div>
+    <div class="stat-card"><div class="stat-num">4</div><div class="stat-label">Sucursales</div></div>
+  `;
+}
+
+/* ============================================================
+   FILTER PILLS
+   ============================================================ */
+function renderFilterPills(){
+  const container=document.getElementById('filter-pills');
+  const pills=[
+    {label:'Todos',value:''},
+    {label:'💰 Con Saldo',value:'__bal__'},
+    {label:'Bucerías',value:'__suc_Bucerías__'},
+    {label:'Libramiento',value:'__suc_Libramiento__'},
+    {label:'Nuevo Vallarta',value:'__suc_Nuevo Vallarta__'},
+    {label:'Apodaca',value:'__suc_Apodaca__'},
+  ];
+  container.innerHTML=pills.map(p=>`
+    <div ontouchstart="" <div class="filter-pill${activeFilter===p.value?' active':''}" onclick="setFilter('${p.value}')">${p.label}</div>
+  `).join('');
+}
+
+function setFilter(v){activeFilter=v;renderFilterPills();renderList()}
+
+/* ============================================================
+   CLIENT LIST
+   ============================================================ */
+function renderList(){
+  const term=(document.getElementById('search').value||''). toUpperCase().trim();
+  const list=document.getElementById('client-list');
+  
+  let results=db.filter((c,i)=>{
+    c._i=i;
+    const m=!term||c.name.toUpperCase().includes(term)||
+      (c.plate&&c.plate.toUpperCase().includes(term))||
+      (c.phone&&c.phone.includes(term))||
+      (c.car&&c.car.toUpperCase().includes(term));
+    let f=true;
+    if(activeFilter==='__bal__')f=parseFloat(c.balance)>0;
+    else if(activeFilter.startsWith('__suc_'))f=c.sucursal===activeFilter.slice(6,-2);
+    return m&&f;
+  });
+
+  document.getElementById('result-count').textContent=`${results.length} cliente${results.length!==1?'s':''}`;
+  
+  if(!results.length){
+    list.innerHTML='<div class="empty-state"><i class="fa-solid fa-user-slash"></i><p>No se encontraron clientes</p></div>';
+    return;
+  }
+
+  list.innerHTML=results.map((c,i)=>{
+    const realIdx=db.indexOf(c);
+    const ini=c.name.split(' ').slice(0,2).map(w=>w[0]||'?').join('').toUpperCase();
+    const bal=parseFloat(c.balance)||0;
+    return `<div ontouchstart="" <div class="client-item" onclick="selectClient(${realIdx})">
+      <div class="client-avatar">${ini}</div>
+      <div class="client-info">
+        <div class="c-name">${c.name}</div>
+        <div class="c-detail">${c.car||'Sin vehículo'} ${c.plate?'· '+c.plate:''}</div>
+      </div>
+      <div class="client-right">
+        <div class="bal-badge${bal<=0?' zero':''}">${bal>0?'$'+bal.toFixed(2):'—'}</div>
+        <div class="suc-tag">${c.sucursal||''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ============================================================
+   SELECT CLIENT
+   ============================================================ */
+function selectClient(idx){
+  selectedIdx=idx;
+  const c=db[idx];
+  if(!c)return;
+  const ini=c.name.split(' ').slice(0,2).map(w=>w[0]||'?').join('').toUpperCase();
+  const bal=parseFloat(c.balance)||0;
+  document.getElementById('detail-header').innerHTML=`
+    <div class="big-avatar">${ini}</div>
+    <div class="client-detail-info">
+      <h2>${c.name}</h2>
+      <p>${c.car||''} ${c.plate?'· '+c.plate:''}</p>
+      <p style="color:var(--text-muted);font-size:.7rem;margin-top:2px">${c.sucursal||''}</p>
+    </div>
+    ${bal>0?`<div class="bal-display"><div class="bal-num">$${bal.toFixed(2)}</div><div class="bal-lbl">Monedero</div></div>`:''}
+  `;
+  document.getElementById('a-name').value=c.name;
+  document.getElementById('a-car').value=c.car||'';
+  document.getElementById('a-plate').value=c.plate||'';
+  document.getElementById('a-phone').value=c.phone||'';
+  document.getElementById('a-balance').value=c.balance||0;
+  document.getElementById('a-code').value=c.code||'';
+  document.getElementById('a-sucursal').value=c.sucursal||'Bucerías';
+  document.getElementById('q-phone').value=c.phone||'';
+  go('v-action');
+  previewMsg();
+}
+
+/* ============================================================
+   PREVIEW & WHATSAPP
+   ============================================================ */
+function previewMsg(){
+  const code=document.getElementById('a-code').value;
+  const name=document.getElementById('a-name').value;
+  const car=document.getElementById('a-car').value;
+  const bal=parseFloat(document.getElementById('a-balance').value||0);
+  const box=document.getElementById('msg-preview');
+  if(!code||!SERVICES[code]){box.textContent='Selecciona un código de servicio para generar el mensaje.';return}
+  const svc=SERVICES[code];
+  const catMap={'SERV LLANTERA':'mantenimiento de llantas','LUBRICACION':'cambio de aceite','SUSPENSION':'servicio de suspensión','FRENOS':'servicio de frenos','MOTOR':'servicio de motor','AIRE ACONDICIONADO':'revisión de aire acondicionado'};
+  const svcName=catMap[svc.category]||svc.desc.toLowerCase();
+  const firstName=name.split(' ')[0];
+  let msg=`👋 Hola ${firstName}, ¿cómo estás?\n\n`;
+  msg+=`Soy Paola Díaz de *Grimaldi Michelin Car Service* 🔵\n\n`;
+  msg+=`Te escribo para recordarte que este mes le toca el *${svcName}* a tu *${car||'vehículo'}* 🚗\n\n`;
+  if(bal>0)msg+=`💰 Además, cuentas con *$${bal.toFixed(2)}* disponibles en tu monedero electrónico. ¡Aprovéchalos para tu próximo servicio! 😊\n\n`;
+  msg+=`🗓️ ¿Te gustaría que agendemos una cita?\n\nEstamos para servirte 🤝`;
+  box.textContent=msg;
+}
+
+function sendWA(){
+  const txt=document.getElementById('msg-preview').textContent;
+  if(txt.includes('Selecciona un código')){toast('⚠️ Selecciona un código primero');return}
+  const phone=document.getElementById('a-phone').value.replace(/\D/g,'');
+  if(!phone){toast('⚠️ El cliente no tiene teléfono');return}
+  logActivity('wa',document.getElementById('a-name').value,'Recordatorio enviado');
+  const url=`https://wa.me/52${phone}?text=${encodeURIComponent(txt)}`;
+  window.open(url,'_blank');
+  toast('✅ Abriendo WhatsApp...');
+}
+
+/* ============================================================
+   SAVE / EDIT / DELETE
+   ============================================================ */
+function saveClientEdit(){
+  if(selectedIdx<0)return;
+  db[selectedIdx]={
+    ...db[selectedIdx],
+    name:document.getElementById('a-name').value.toUpperCase().trim(),
+    car:document.getElementById('a-car').value,
+    plate:document.getElementById('a-plate').value.toUpperCase(),
+    phone:document.getElementById('a-phone').value,
+    balance:parseFloat(document.getElementById('a-balance').value)||0,
+    code:document.getElementById('a-code').value,
+    sucursal:document.getElementById('a-sucursal').value,
+  };
+  saveDB();renderStats();
+  logActivity('edit',db[selectedIdx].name,'Datos actualizados');
+  toast('✅ Cambios guardados');
+  // Update header
+  selectClient(selectedIdx);
+}
+
+function deleteClient(){
+  if(selectedIdx<0)return;
+  const name=db[selectedIdx].name;
+  document.getElementById('confirm-title').textContent='Eliminar cliente';
+  document.getElementById('confirm-msg').textContent=`¿Eliminar a ${name}? Esta acción no se puede deshacer.`;
+  document.getElementById('confirm-ok').onclick=()=>{
+    db.splice(selectedIdx,1);
+    saveDB();renderStats();renderList();
+    closeModal();
+    go('v-clients','tab-clients');
+    toast('🗑️ Cliente eliminado');
+  };
+  document.getElementById('confirm-modal').classList.add('show');
+}
+
+function closeModal(){document.getElementById('confirm-modal').classList.remove('show')}
+
+function saveNewClient(){
+  const name=document.getElementById('n-name').value.trim();
+  const phone=document.getElementById('n-phone').value.trim();
+  if(!name){toast('⚠️ Ingresa el nombre');return}
+  const nc={
+    name:name.toUpperCase(),
+    car:document.getElementById('n-car').value,
+    plate:document.getElementById('n-plate').value.toUpperCase(),
+    phone:phone,
+    balance:parseFloat(document.getElementById('n-balance').value)||0,
+    code:document.getElementById('n-code').value,
+    sucursal:document.getElementById('n-sucursal').value,
+  };
+  db.unshift(nc);
+  saveDB();
+  ['n-name','n-car','n-plate','n-phone'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('n-balance').value='0';
+  document.getElementById('n-code').value='';
+  logActivity('new',name,'Cliente registrado');
+  renderStats();renderList();
+  toast('✅ Cliente registrado');
+}
+
+/* ============================================================
+   COTIZADOR
+   ============================================================ */
+let currentCat='ALL';
+
+function filterServices(){
+  const term=document.getElementById('q-search').value.toUpperCase();
+  const sel=document.getElementById('q-select');
+  sel.innerHTML='<option value="">-- Seleccionar --</option>';
+  Object.entries(SERVICES).filter(([k,s])=>
+    !term||k.includes(term)||s.desc.toUpperCase().includes(term)
+  ).forEach(([k,s])=>{
+    const o=document.createElement('option');
+    o.value=k;o.textContent=k+' · '+s.desc;sel.appendChild(o);
+  });
+}
+
+function calcQuote(){
+  const code=document.getElementById('q-select').value;
+  const res=document.getElementById('q-result');
+  if(!code||!SERVICES[code]){res.style.display='none';return}
+  const s=SERVICES[code];
+  res.style.display='block';
+  document.getElementById('q-price').textContent=s.price.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+  document.getElementById('q-desc').textContent=s.desc;
+  document.getElementById('q-cat').textContent=s.category;
+  document.getElementById('q-code-lbl').textContent=code;
+}
+
+function sendQuote(){
+  const code=document.getElementById('q-select').value;
+  if(!code){toast('⚠️ Selecciona un servicio');return}
+  const s=SERVICES[code];
+  const phone=document.getElementById('q-phone').value.replace(/\D/g,'');
+  let msg=`🔵 *Cotización - Michelin Grimaldi Car Service*\n\n`;
+  msg+=`Servicio: *${s.desc}*\nCódigo: ${code}\nPrecio: *$${s.price.toFixed(2)}*\n\n`;
+  msg+=`¿Deseas agendar tu cita? ¡Con gusto te atendemos! 🤝`;
+  const url=phone?`https://wa.me/52${phone}?text=${encodeURIComponent(msg)}`:`https://wa.me/?text=${encodeURIComponent(msg)}`;
+  window.open(url,'_blank');
+}
+
+function copyQuote(){
+  const code=document.getElementById('q-select').value;
+  if(!code){toast('⚠️ Selecciona un servicio');return}
+  const s=SERVICES[code];
+  const text=`${s.desc} (${code}) · $${s.price.toFixed(2)}`;
+  if(navigator.clipboard){navigator.clipboard.writeText(text).then(()=>toast('📋 Copiado'))}
+  else{toast('📋 '+text)}
+}
+
+function renderServicesPage(){
+  const cats=[...new Set(Object.values(SERVICES).map(s=>s.category))].sort();
+  const tabsEl=document.getElementById('cat-tabs');
+  tabsEl.innerHTML=[{label:'Todos',val:'ALL'},...cats.map(c=>({label:c,val:c}))].map(t=>
+    `<div ontouchstart="" <div class="cat-tab${activeCat===t.val?' active':''}" onclick="setCat('${t.val}')">${t.label}</div>`
+  ).join('');
+  const listEl=document.getElementById('services-list');
+  const filtered=Object.entries(SERVICES).filter(([k,s])=>activeCat==='ALL'||s.category===activeCat);
+  listEl.innerHTML=filtered.map(([k,s])=>`
+    <div ontouchstart="" <div class="svc-card" onclick="pickService('${k}')">
+      <div>
+        <div class="svc-name">${s.desc}</div>
+        <div class="svc-code">${k} · ${s.category}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="svc-price">$${s.price.toLocaleString('es-MX',{minimumFractionDigits:0})}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function setCat(c){activeCat=c;renderServicesPage()}
+
+function pickService(code){
+  document.getElementById('q-select').value=code;
+  calcQuote();
+  document.getElementById('main-content').scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ============================================================
+   ADMIN
+   ============================================================ */
+function renderAdminStats(){
+  const wb=db.filter(c=>c.balance>0);
+  const total=db.reduce((a,c)=>a+(parseFloat(c.balance)||0),0);
+  const bySuc={};
+  db.forEach(c=>{const s=c.sucursal||'Sin asignar';bySuc[s]=(bySuc[s]||0)+1});
+  let rows=`
+    <div class="admin-stat-row"><span class="admin-stat-label">Total clientes</span><span class="admin-stat-val">${db.length}</span></div>
+    <div class="admin-stat-row"><span class="admin-stat-label">Con saldo activo</span><span class="admin-stat-val" style="color:var(--green)">${wb.length}</span></div>
+    <div class="admin-stat-row"><span class="admin-stat-label">Monedero total</span><span class="admin-stat-val" style="color:var(--yellow)">$${total.toLocaleString('es-MX',{minimumFractionDigits:2})}</span></div>
+    <div class="admin-stat-row"><span class="admin-stat-label">Promedio saldo</span><span class="admin-stat-val">$${wb.length?((total/wb.length).toFixed(2)):'0'}</span></div>
+  `;
+  Object.entries(bySuc).sort((a,b)=>b[1]-a[1]).forEach(([s,n])=>{
+    rows+=`<div class="admin-stat-row"><span class="admin-stat-label">· ${s}</span><span class="admin-stat-val">${n} clientes</span></div>`;
+  });
+  document.getElementById('admin-stats-list').innerHTML=rows;
+}
+
+function exportCSV(){
+  const hdr=['Nombre','Vehículo','Placa','Teléfono','Saldo','Código','Sucursal'];
+  const rows=db.map(c=>[c.name,c.car,c.plate,c.phone,c.balance,c.code,c.sucursal].map(v=>`"${v||''}"` ).join(','));
+  const csv=[hdr.join(','),...rows].join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  downloadBlob(blob,'michelin_clientes_'+today()+'.csv');
+  toast('📄 CSV exportado');
+}
+
+function exportJSON(){
+  const blob=new Blob([JSON.stringify({db,exportDate:new Date().toISOString(),version:'2.0'},null,2)],{type:'application/json'});
+  downloadBlob(blob,'michelin_respaldo_'+today()+'.json');
+  toast('💾 Respaldo descargado');
+}
+
+function importJSON(e){
+  const file=e.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      const imported=data.db||data;
+      if(!Array.isArray(imported))throw new Error('Formato inválido');
+      db=imported;saveDB();
+      renderStats();renderList();renderAdminStats();
+      toast(`✅ ${imported.length} clientes importados`);
+    }catch(err){toast('❌ Error al importar JSON')}
+  };
+  reader.readAsText(file);
+  e.target.value='';
+}
+
+function downloadBlob(blob,name){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download=name;a.click();
+}
+function today(){return new Date().toISOString().slice(0,10)}
+
+/* ============================================================
+   ACTIVITY LOG
+   ============================================================ */
+function logActivity(type,name,action){
+  activityLog.unshift({type,name,action,time:Date.now()});
+  if(activityLog.length>50)activityLog.pop();
+  saveLog();renderActivityLog();
+}
+
+function renderActivityLog(){
+  const el=document.getElementById('activity-log');
+  if(!activityLog.length){
+    el.innerHTML='<div class="empty-state" style="padding:20px 0"><i class="fa-regular fa-clock"></i><p>Sin actividad</p></div>';
+    return;
+  }
+  const icons={wa:'<i class="fa-brands fa-whatsapp"></i>',new:'<i class="fa-solid fa-user-plus"></i>',edit:'<i class="fa-solid fa-pen"></i>'};
+  el.innerHTML=activityLog.slice(0,10).map(l=>{
+    const mins=Math.floor((Date.now()-l.time)/60000);
+    const t=mins<1?'Ahora':mins<60?`${mins}m`:`${Math.floor(mins/60)}h`;
+    return `<div class="log-item">
+      <div class="log-icon ${l.type}">${icons[l.type]||''}</div>
+      <div class="log-text"><strong>${l.name}</strong> · ${l.action}</div>
+      <div class="log-time">${t}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+function go(viewId,tabId){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById(viewId).classList.add('active');
+  document.getElementById('main-content').scrollTo({top:0,behavior:'instant'});
+  if(tabId){
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+  }
+  if(viewId==='v-admin')renderAdminStats();
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+/* Click outside modal */
+document.getElementById('confirm-modal').addEventListener('click',function(e){
+  if(e.target===this)closeModal();
+});
+</script>
+</body>
+</html>
