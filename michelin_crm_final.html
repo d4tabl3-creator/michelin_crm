@@ -296,10 +296,34 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);heig
           </div>
         </div>
         <div class="field">
-          <label>Código de Servicio</label>
-          <select id="a-code" onchange="previewMsg()">
-            <option value="">-- Seleccionar servicio --</option>
-          </select>
+          <label>Código de Servicio (ZL)</label>
+          <input type="text" id="a-code" placeholder="Ej: ZLLM01-K, ZLA01-K, ZLB11-K..." 
+            oninput="previewMsg()" onchange="previewMsg()"
+            style="text-transform:uppercase"
+            list="zl-codes-list">
+          <datalist id="zl-codes-list">
+            <option value="ZLLM01-K">Cambio de Aceite 15W40 Mineral</option>
+            <option value="ZLLM02-K">Cambio de Aceite 5W30 Mineral</option>
+            <option value="ZLLS01-K">Cambio de Aceite 5W30 Sintético</option>
+            <option value="ZLT23-K">Paquete Carretero c/Aceite 15W40 Mineral</option>
+            <option value="ZLT24-K">Paquete Carretero c/Aceite 5W30 Mineral</option>
+            <option value="ZLT25-K">Paquete Carretero c/Aceite 5W30 Sintético</option>
+            <option value="ZLB08-K">Servicio Mayor Básico c/Aceite 15W40 Mineral</option>
+            <option value="ZLB09-K">Servicio Mayor Básico c/Aceite 5W30 Mineral</option>
+            <option value="ZLB10-K">Servicio Mayor Básico c/Aceite 5W30 Sintético</option>
+            <option value="ZLB11-K">Servicio Mayor c/Aceite 15W40 Mineral</option>
+            <option value="ZLB12-K">Servicio Mayor c/Aceite 5W30 Mineral</option>
+            <option value="ZLB13-K">Servicio Mayor c/Aceite 5W30 Sintético</option>
+            <option value="ZLB14-K">Servicio Mayor c/Aceite 15W40 Mineral Plus</option>
+            <option value="ZLB15-K">Servicio Mayor c/Aceite 5W30 Mineral Plus</option>
+            <option value="ZLA01-K">Paquete ABR</option>
+            <option value="ZLA02-K">Paquete ABR Rin 17</option>
+            <option value="ZLA03-K">Paquete ABR Rin 18</option>
+            <option value="ZLA04-K">Paquete ABR Rin 19</option>
+            <option value="ZLP05-K">Servicio Performance c/Aceite 15W40 Mineral</option>
+            <option value="ZLP06-K">Servicio Performance c/Aceite 5W30 Mineral</option>
+            <option value="ZLP07-K">Servicio Performance c/Aceite 5W30 Sintético</option>
+          </datalist>
         </div>
         <div class="btn-row">
           <button class="btn btn-ghost btn-sm" onclick="saveClientEdit()"><i class="fa-solid fa-floppy-disk"></i> Guardar</button>
@@ -596,13 +620,13 @@ function init(){
    SELECTS
    ============================================================ */
 function populateSelects(){
-  const selIds=['a-code','n-code','q-select'];
+  const selIds=['n-code','q-select'];
   selIds.forEach(id=>{
     const sel=document.getElementById(id);
     sel.innerHTML='<option value="">-- Seleccionar --</option>';
-    Object.entries(SERVICES).forEach(([k,s])=>{
+    Object.entries(SERVICES).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([k,s])=>{
       const o=document.createElement('option');
-      o.value=k; o.textContent=k+' · '+s.desc;
+      o.value=k; o.textContent=k+' — '+s.desc;
       sel.appendChild(o);
     });
   });
@@ -721,19 +745,28 @@ function selectClient(idx){
    PREVIEW & WHATSAPP
    ============================================================ */
 function getTextoByCode(code){
-  // Mapeo de códigos ZL a número de texto según hoja RESUMEN
-  const texto1=['ZLA01-K','ZLA02-K','ZLA03-K','ZLA04-K','ZLA05-K','ZLA06-K','ZLA07-K','ZLA08-K','ZLQ01','ZLQ02','ZLQ03','ZLQ04','ZLQ05','ZLQ06','ZLQ07'];
-  const texto2=['ZLLM01-K','ZLLM02-K','ZLLS01-K','ZLT23-K','ZLT24-K','ZLB08-K','ZLB09-K','ZLP05-K','ZLP06-K','ZLP07-K'];
-  const texto3=['ZLB10-K','ZLB08-K-6M','ZLB09-K-6M'];
-  const texto4=['ZLT23-K-6M','ZLT24-K-6M','ZLT25-K'];
-  const texto5=['ZLB11-K','ZLB12-K','ZLB13-K','ZLB14-K','ZLB15-K','ZLP05-K-6M','ZLP06-K-6M'];
-  const cu=code.toUpperCase().trim();
-  if(texto1.some(c=>cu.startsWith(c.replace('-K','').replace('ZLQ','ZLQ'))||cu===c||cu.startsWith('ZLA')||cu.startsWith('ZLQ')))return 1;
-  if(texto5.some(c=>cu===c)||cu.startsWith('ZLB11')||cu.startsWith('ZLB12')||cu.startsWith('ZLB13')||cu.startsWith('ZLB14')||cu.startsWith('ZLB15'))return 5;
-  if(texto3.some(c=>cu===c)||cu.startsWith('ZLB10')||cu.startsWith('ZLB08')||cu.startsWith('ZLB09'))return 3;
-  if(texto4.some(c=>cu===c)||cu.startsWith('ZLT25'))return 4;
-  if(texto2.some(c=>cu===c)||cu.startsWith('ZLLM')||cu.startsWith('ZLLS')||cu.startsWith('ZLT23')||cu.startsWith('ZLT24')||cu.startsWith('ZLP'))return 2;
-  return 0;
+  const cu=(code||'').toUpperCase().trim();
+  if(!cu) return 0;
+
+  // Texto 1 — Paquete ABR / mantenimiento llantas
+  if(cu.startsWith('ZLA') || cu.startsWith('ZLQ') || cu.startsWith('ZLI')) return 1;
+
+  // Texto 5 — Servicio Mayor completo (ZLB11 en adelante, ZLP05, ZLP06)
+  if(cu.startsWith('ZLB11')||cu.startsWith('ZLB12')||cu.startsWith('ZLB13')||
+     cu.startsWith('ZLB14')||cu.startsWith('ZLB15')||
+     cu.startsWith('ZLP05')||cu.startsWith('ZLP06')) return 5;
+
+  // Texto 3 — Servicio Mayor Básico (ZLB08, ZLB09, ZLB10)
+  if(cu.startsWith('ZLB08')||cu.startsWith('ZLB09')||cu.startsWith('ZLB10')) return 3;
+
+  // Texto 4 — Paquete Carretero (ZLT25 solo, o ZLT sin aceite mineral recordatorio 6m)
+  if(cu.startsWith('ZLT25')) return 4;
+
+  // Texto 2 — Cambio de aceite (ZLLM, ZLLS, ZLT23, ZLT24, ZLP07, cualquier ZL restante)
+  if(cu.startsWith('ZLL')||cu.startsWith('ZLT23')||cu.startsWith('ZLT24')||
+     cu.startsWith('ZLP07')||cu.startsWith('ZL')) return 2;
+
+  return 0; // código no ZL → mensaje genérico
 }
 
 function buildMsgTexto(num, name, car, bal){
@@ -757,12 +790,13 @@ function buildMsgTexto(num, name, car, bal){
 }
 
 function previewMsg(){
-  const code=document.getElementById('a-code').value;
+  const codeRaw=document.getElementById('a-code').value||'';
+  const code=codeRaw.toUpperCase().trim();
   const name=document.getElementById('a-name').value;
   const car=document.getElementById('a-car').value;
   const bal=parseFloat(document.getElementById('a-balance').value||0);
   const box=document.getElementById('msg-preview');
-  if(!code){box.textContent='Selecciona un código de servicio para generar el mensaje.';return}
+  if(!code){box.textContent='Escribe o selecciona el código ZL del cliente para generar el mensaje.';return}
   const num=getTextoByCode(code);
   box.textContent=buildMsgTexto(num,name,car,bal);
 }
@@ -790,7 +824,7 @@ function saveClientEdit(){
     plate:document.getElementById('a-plate').value.toUpperCase(),
     phone:document.getElementById('a-phone').value,
     balance:parseFloat(document.getElementById('a-balance').value)||0,
-    code:document.getElementById('a-code').value,
+    code:document.getElementById('a-code').value.toUpperCase().trim(),
     sucursal:document.getElementById('a-sucursal').value,
   };
   saveDB();renderStats();
@@ -846,15 +880,24 @@ function saveNewClient(){
 let currentCat='ALL';
 
 function filterServices(){
-  const term=document.getElementById('q-search').value.toUpperCase();
+  const term=document.getElementById('q-search').value.toUpperCase().trim();
   const sel=document.getElementById('q-select');
   sel.innerHTML='<option value="">-- Seleccionar --</option>';
-  Object.entries(SERVICES).filter(([k,s])=>
-    !term||k.includes(term)||s.desc.toUpperCase().includes(term)
-  ).forEach(([k,s])=>{
-    const o=document.createElement('option');
-    o.value=k;o.textContent=k+' · '+s.desc;sel.appendChild(o);
-  });
+  Object.entries(SERVICES)
+    .filter(([k,s])=>!term||k.startsWith(term)||k.includes(term)||s.desc.toUpperCase().includes(term))
+    .sort((a,b)=>{
+      // Prioritize exact code matches first
+      if(term){
+        const aStart=a[0].startsWith(term)?0:1;
+        const bStart=b[0].startsWith(term)?0:1;
+        if(aStart!==bStart)return aStart-bStart;
+      }
+      return a[0].localeCompare(b[0]);
+    })
+    .forEach(([k,s])=>{
+      const o=document.createElement('option');
+      o.value=k;o.textContent=k+' — '+s.desc;sel.appendChild(o);
+    });
 }
 
 function calcQuote(){
