@@ -622,7 +622,27 @@ function loadDB(){
     const saved=localStorage.getItem(STORAGE_KEY);
     if(saved){
       const parsed=JSON.parse(saved);
-      if(parsed&&parsed.length>0){db=parsed;return}
+      if(parsed&&parsed.length>0){
+        // Merge history from DEFAULT_DB into saved clients
+        const defaultMap={};
+        DEFAULT_DB.forEach(c=>{ defaultMap[c.name.toUpperCase().trim()]=c; });
+        parsed.forEach(c=>{
+          const key=c.name.toUpperCase().trim();
+          if(!c.history||c.history.length===0){
+            if(defaultMap[key]&&defaultMap[key].history&&defaultMap[key].history.length>0){
+              c.history=defaultMap[key].history;
+            }
+          }
+        });
+        // Add new clients from DEFAULT_DB not in saved
+        const savedNames=new Set(parsed.map(c=>c.name.toUpperCase().trim()));
+        DEFAULT_DB.forEach(c=>{
+          if(!savedNames.has(c.name.toUpperCase().trim())) parsed.push(c);
+        });
+        db=parsed;
+        saveDB();
+        return;
+      }
     }
   }catch(e){}
   db=[...DEFAULT_DB];
@@ -704,6 +724,7 @@ function renderFilterPills(){
   const pills=[
     {label:'Todos',value:''},
     {label:'💰 Con Saldo',value:'__bal__'},
+    {label:'🔖 Con Código',value:'__code__'},
     {label:'Bucerías',value:'__suc_Bucerías__'},
     {label:'Libramiento',value:'__suc_Libramiento__'},
     {label:'Nuevo Vallarta',value:'__suc_Nuevo Vallarta__'},
@@ -720,7 +741,7 @@ function setFilter(v){activeFilter=v;renderFilterPills();renderList()}
    CLIENT LIST
    ============================================================ */
 function renderList(){
-  const term=(document.getElementById('search').value||''). toUpperCase().trim();
+  const term=(document.getElementById('search').value||'').toUpperCase().trim();
   const list=document.getElementById('client-list');
   
   let results=db.filter((c,i)=>{
@@ -728,9 +749,11 @@ function renderList(){
     const m=!term||c.name.toUpperCase().includes(term)||
       (c.plate&&c.plate.toUpperCase().includes(term))||
       (c.phone&&c.phone.includes(term))||
-      (c.car&&c.car.toUpperCase().includes(term));
+      (c.car&&c.car.toUpperCase().includes(term))||
+      (c.code&&c.code.toUpperCase().includes(term));
     let f=true;
     if(activeFilter==='__bal__')f=parseFloat(c.balance)>0;
+    else if(activeFilter==='__code__')f=!!(c.code&&c.code.trim());
     else if(activeFilter.startsWith('__suc_'))f=c.sucursal===activeFilter.slice(6,-2);
     return m&&f;
   });
