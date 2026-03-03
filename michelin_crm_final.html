@@ -260,7 +260,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);heig
       <div class="stats-row" id="stats-row"></div>
       <div class="search-wrap">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input class="search-input" type="search" id="search" placeholder="Nombre, placa, teléfono..." oninput="renderList()">
+        <input class="search-input" type="search" id="search" placeholder="Nombre, placa, teléfono, artículo (ZZZ22, ZLA04-K...)..." oninput="renderList()">
       </div>
       <div class="filter-scroll" id="filter-pills"></div>
       <div class="result-count" id="result-count"></div>
@@ -724,7 +724,7 @@ function renderFilterPills(){
   const pills=[
     {label:'Todos',value:''},
     {label:'💰 Con Saldo',value:'__bal__'},
-    {label:'🔖 Con Código',value:'__code__'},
+    {label:'📋 Con Historial',value:'__code__'},
     {label:'Bucerías',value:'__suc_Bucerías__'},
     {label:'Libramiento',value:'__suc_Libramiento__'},
     {label:'Nuevo Vallarta',value:'__suc_Nuevo Vallarta__'},
@@ -746,14 +746,22 @@ function renderList(){
   
   let results=db.filter((c,i)=>{
     c._i=i;
-    const m=!term||c.name.toUpperCase().includes(term)||
+    // Search in history articles
+    const historyMatch=term&&c.history&&c.history.some(v=>
+      v.items&&v.items.some(it=>
+        (it.code&&it.code.toUpperCase().includes(term))||
+        (it.desc&&it.desc.toUpperCase().includes(term))
+      )
+    );
+    const m=!term||
+      c.name.toUpperCase().includes(term)||
       (c.plate&&c.plate.toUpperCase().includes(term))||
       (c.phone&&c.phone.includes(term))||
       (c.car&&c.car.toUpperCase().includes(term))||
-      (c.code&&c.code.toUpperCase().includes(term));
+      historyMatch;
     let f=true;
     if(activeFilter==='__bal__')f=parseFloat(c.balance)>0;
-    else if(activeFilter==='__code__')f=!!(c.code&&c.code.trim());
+    else if(activeFilter==='__code__')f=!!(c.history&&c.history.length>0);
     else if(activeFilter.startsWith('__suc_'))f=c.sucursal===activeFilter.slice(6,-2);
     return m&&f;
   });
@@ -818,29 +826,35 @@ function selectClient(idx){
 /* ============================================================
    PREVIEW & WHATSAPP
    ============================================================ */
-function getTextoByCode(code){
-  const cu=(code||'').toUpperCase().trim();
-  if(!cu) return 0;
+// Mapeo exacto de artículos principales → número de texto (según hoja RESUMEN)
+const TEXTO_MAP = {
+  'ZLLM01-K': 2, 'ZLLM02-K': 2, 'ZLLS01-K': 2,
+  'ZLT23-K': 4, 'ZLT24-K': 4, 'ZLT25-K': 4,
+  'ZLB08-K': 3, 'ZLB09-K': 3, 'ZLB10-K': 3,
+  'ZLB11-K': 5, 'ZLB12-K': 5, 'ZLB13-K': 5,
+  'ZLP05-K': 5, 'ZLP06-K': 5, 'ZLP07-K': 2,
+  'ZLA01-K': 1, 'ZLA02-K': 1, 'ZLA03-K': 1,
+  'ZLA04-K': 1, 'ZLA05-K': 1, 'ZLA06-K': 1,
+  'ZLA07-K': 1, 'ZLA08-K': 1,
+};
 
-  // Texto 1 — Paquete ABR / mantenimiento llantas
-  if(cu.startsWith('ZLA') || cu.startsWith('ZLQ') || cu.startsWith('ZLI')) return 1;
-
-  // Texto 5 — Servicio Mayor completo (ZLB11 en adelante, ZLP05, ZLP06)
-  if(cu.startsWith('ZLB11')||cu.startsWith('ZLB12')||cu.startsWith('ZLB13')||
-     cu.startsWith('ZLB14')||cu.startsWith('ZLB15')||
-     cu.startsWith('ZLP05')||cu.startsWith('ZLP06')) return 5;
-
-  // Texto 3 — Servicio Mayor Básico (ZLB08, ZLB09, ZLB10)
-  if(cu.startsWith('ZLB08')||cu.startsWith('ZLB09')||cu.startsWith('ZLB10')) return 3;
-
-  // Texto 4 — Paquete Carretero (ZLT25 solo, o ZLT sin aceite mineral recordatorio 6m)
-  if(cu.startsWith('ZLT25')) return 4;
-
-  // Texto 2 — Cambio de aceite (ZLLM, ZLLS, ZLT23, ZLT24, ZLP07, cualquier ZL restante)
-  if(cu.startsWith('ZLL')||cu.startsWith('ZLT23')||cu.startsWith('ZLT24')||
-     cu.startsWith('ZLP07')||cu.startsWith('ZL')) return 2;
-
-  return 0; // código no ZL → mensaje genérico
+function getTextoFromHistory(client){
+  // Busca en el último servicio del cliente el artículo principal (clave -K)
+  if(!client||!client.history||client.history.length===0) return 0;
+  // Sort history newest first
+  const sorted=[...client.history].sort((a,b)=>{
+    const da=a.date?a.date.split('/').reverse().join(''):'0';
+    const db2=b.date?b.date.split('/').reverse().join(''):'0';
+    return db2.localeCompare(da);
+  });
+  // Look through last visit items for a mapped article
+  for(const visit of sorted){
+    for(const item of (visit.items||[])){
+      const code=(item.code||'').toUpperCase().trim();
+      if(TEXTO_MAP[code]!==undefined) return TEXTO_MAP[code];
+    }
+  }
+  return 0;
 }
 
 function buildMsgTexto(num, name, car, bal){
@@ -858,21 +872,22 @@ function buildMsgTexto(num, name, car, bal){
   }else if(num===5){
     return `👋 Hola *${firstName}*\n\nLe contactamos de *Michelin Car Service* para recordarle que ya le corresponde el servicio mayor (afinación, cambio de aceite y mantenimiento de llantas) a ${carStr}. Este servicio es importante para proteger el motor y evitar el desgaste prematuro de las llantas.${bal_line}\n\n🗓️ ¿Le gustaría que agendemos su cita?`;
   }else{
-    // Código genérico no ZL - mensaje genérico
     return `👋 Hola *${firstName}*\n\nLe contactamos de *Michelin Car Service* para recordarle que tiene un servicio pendiente para ${carStr}.${bal_line}\n\n🗓️ ¿Le gustaría que agendemos su cita?`;
   }
 }
 
 function previewMsg(){
-  const codeRaw=document.getElementById('a-code').value||'';
-  const code=codeRaw.toUpperCase().trim();
-  const name=document.getElementById('a-name').value;
-  const car=document.getElementById('a-car').value;
-  const bal=parseFloat(document.getElementById('a-balance').value||0);
-  const box=document.getElementById('msg-preview');
-  if(!code){box.textContent='Escribe o selecciona el código ZL del cliente para generar el mensaje.';return}
-  const num=getTextoByCode(code);
-  box.textContent=buildMsgTexto(num,name,car,bal);
+  const client = db[selectedIdx];
+  const name = document.getElementById('a-name').value;
+  const car = document.getElementById('a-car').value;
+  const bal = parseFloat(document.getElementById('a-balance').value||0);
+  const box = document.getElementById('msg-preview');
+  const num = getTextoFromHistory(client);
+  if(num===0){
+    box.textContent='Sin artículo principal en el historial para generar mensaje automático.';
+    return;
+  }
+  box.textContent = buildMsgTexto(num, name, car, bal);
 }
 
 function sendWA(){
