@@ -588,7 +588,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);heig
 <!-- FLOATING SEARCH OVERLAY -->
 <div class="float-search-overlay" id="float-search-overlay" onclick="closeFloatSearch(event)">
   <div class="float-search-box" onclick="event.stopPropagation()">
-    <input type="search" id="float-search-input" placeholder="Nombre, placa, teléfono, artículo..." 
+    <input type="search" id="float-search-input" placeholder="Nombre, placa, artículo (ZLQ04, ZLLM01-K...)" 
       oninput="renderFloatResults()" autocomplete="off">
   </div>
   <div class="float-search-results" id="float-search-results" onclick="event.stopPropagation()">
@@ -1195,31 +1195,51 @@ function closeFloatSearch(e){
 function renderFloatResults(){
   const term=(document.getElementById('float-search-input').value||'').toUpperCase().trim();
   const container=document.getElementById('float-search-results');
-  if(!term){container.innerHTML='<div class="float-no-results">Escribe para buscar un cliente...</div>';return;}
-  const results=db.filter((c,i)=>{
-    c._i=i;
-    const histMatch=c.history&&c.history.some(v=>v.items&&v.items.some(it=>
-      (it.code&&it.code.toUpperCase().includes(term))||(it.desc&&it.desc.toUpperCase().includes(term))
-    ));
-    return c.name.toUpperCase().includes(term)||
-      (c.plate&&c.plate.toUpperCase().includes(term))||
-      (c.phone&&c.phone.includes(term))||
-      (c.car&&c.car.toUpperCase().includes(term))||
-      histMatch;
-  }).slice(0,20);
-  if(!results.length){container.innerHTML='<div class="float-no-results">Sin resultados</div>';return;}
-  container.innerHTML=results.map(c=>{
+  if(!term){container.innerHTML='<div class="float-no-results">Escribe nombre, placa, teléfono o artículo (ej: ZLQ04, ZLLM01-K...)</div>';return;}
+
+  const results=[];
+  db.forEach((c,i)=>{
+    // Find matching article in history
+    let matchedArticle=null;
+    if(c.history){
+      for(const v of c.history){
+        for(const it of (v.items||[])){
+          if((it.code&&it.code.toUpperCase().includes(term))||
+             (it.desc&&it.desc.toUpperCase().includes(term))){
+            matchedArticle=it;
+            break;
+          }
+        }
+        if(matchedArticle) break;
+      }
+    }
+    const nameMatch=c.name.toUpperCase().includes(term);
+    const plateMatch=c.plate&&c.plate.toUpperCase().includes(term);
+    const phoneMatch=c.phone&&c.phone.includes(term);
+    const carMatch=c.car&&c.car.toUpperCase().includes(term);
+    if(nameMatch||plateMatch||phoneMatch||carMatch||matchedArticle){
+      results.push({c, i, matchedArticle});
+    }
+  });
+
+  const top=results.slice(0,25);
+  if(!top.length){container.innerHTML='<div class="float-no-results">Sin resultados para "'+term+'"</div>';return;}
+
+  container.innerHTML=top.map(({c,i,matchedArticle})=>{
     const bal=parseFloat(c.balance)||0;
     const ini=c.name.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
-    return `<div class="float-result-item" onclick="floatSelectClient(${c._i})">
-      <div style="display:flex;align-items:center;gap:10px">
+    const articleBadge=matchedArticle?
+      `<div style="font-size:.68rem;color:var(--yellow);margin-top:2px">🔧 ${matchedArticle.code} — ${matchedArticle.desc.slice(0,30)}</div>`:'';
+    return `<div class="float-result-item" onclick="floatSelectClient(${i})">
+      <div style="display:flex;align-items:center;gap:10px;flex:1">
         <div style="width:36px;height:36px;border-radius:10px;background:var(--blue-dark);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;flex-shrink:0">${ini}</div>
-        <div>
+        <div style="flex:1;min-width:0">
           <div style="font-weight:600;font-size:.85rem">${c.name}</div>
           <div style="font-size:.72rem;color:var(--text-muted)">${c.car||''} ${c.sucursal?'· '+c.sucursal:''}</div>
+          ${articleBadge}
         </div>
       </div>
-      ${bal>0?`<div style="color:var(--yellow);font-weight:700;font-size:.8rem;flex-shrink:0">$${bal.toFixed(0)}</div>`:''}
+      ${bal>0?`<div style="color:var(--yellow);font-weight:700;font-size:.8rem;flex-shrink:0;margin-left:8px">$${bal.toFixed(0)}</div>`:''}
     </div>`;
   }).join('');
 }
