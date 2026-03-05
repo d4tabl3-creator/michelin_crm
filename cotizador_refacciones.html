@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Cotizador de Refacciones · Michelin Grimaldi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0E1A;
+  --surface:#111827;
+  --surface2:#1C2537;
+  --border:#2A3550;
+  --yellow:#F5C518;
+  --yellow-dim:#C9A114;
+  --blue:#3B82F6;
+  --green:#10B981;
+  --red:#EF4444;
+  --text:#E8ECF4;
+  --muted:#6B7A99;
+  --card:#161F33;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:40px}
+
+/* HEADER */
+.header{background:var(--surface);border-bottom:2px solid var(--yellow);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.header-brand{display:flex;flex-direction:column}
+.brand-title{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:1.3rem;letter-spacing:.05em;color:var(--yellow)}
+.brand-sub{font-size:.7rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.header-badge{background:var(--yellow);color:#000;font-family:'DM Mono',monospace;font-size:.65rem;font-weight:500;padding:4px 10px;border-radius:4px}
+
+/* MAIN */
+.main{max-width:680px;margin:0 auto;padding:16px}
+
+/* SECTION LABEL */
+.sec-label{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;margin-top:20px}
+
+/* CARD */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px}
+
+/* INPUTS */
+.field{margin-bottom:12px}
+.field label{display:block;font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:.9rem;font-family:'Barlow',sans-serif;color:var(--text);outline:none;transition:border-color .2s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--yellow)}
+.field select option{background:var(--surface)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+/* TIPO CLIENTE TOGGLE */
+.tipo-btns{display:flex;gap:6px;flex-wrap:wrap}
+.tipo-btn{flex:1;padding:9px 6px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.85rem;letter-spacing:.05em;cursor:pointer;text-align:center;transition:all .2s}
+.tipo-btn.active{border-color:var(--yellow);background:rgba(245,197,24,.12);color:var(--yellow)}
+
+/* SEARCH */
+.search-wrap{position:relative;margin-bottom:10px}
+.search-wrap input{padding-left:36px}
+.search-wrap .ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:.9rem}
+.results-list{background:var(--surface2);border:1px solid var(--border);border-radius:8px;max-height:220px;overflow-y:auto;display:none}
+.results-list.open{display:block}
+.result-item{padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;transition:background .15s}
+.result-item:last-child{border-bottom:none}
+.result-item:active{background:var(--surface)}
+.result-item .ri-name{font-size:.85rem;color:var(--text)}
+.result-item .ri-cat{font-size:.7rem;color:var(--muted);margin-top:2px}
+.result-item .ri-price{font-family:'DM Mono',monospace;font-size:.85rem;color:var(--yellow);white-space:nowrap}
+
+/* ITEMS TABLE */
+.items-header{display:grid;grid-template-columns:auto 60px 90px 80px 36px;gap:6px;padding:6px 8px;font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.item-row{display:grid;grid-template-columns:auto 60px 90px 80px 36px;gap:6px;align-items:center;padding:8px;background:var(--surface2);border-radius:8px;margin-bottom:5px;border:1px solid var(--border)}
+.item-row .i-desc{font-size:.8rem;line-height:1.3}
+.item-row .i-cg{font-family:'DM Mono',monospace;font-size:.65rem;color:var(--muted)}
+.item-row .i-qty input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:.8rem;color:var(--text);text-align:center;font-family:'DM Mono',monospace}
+.item-row .i-prov select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:4px 4px;font-size:.68rem;color:var(--text)}
+.item-row .i-price{font-family:'DM Mono',monospace;font-size:.82rem;color:var(--yellow);text-align:right}
+.item-row .i-del button{width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--red);cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center}
+.item-row .i-urg{font-size:.62rem;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:3px}
+.urg-1{background:rgba(16,185,129,.15);color:var(--green)}
+.urg-2{background:rgba(245,197,24,.15);color:var(--yellow)}
+.urg-3{background:rgba(239,68,68,.15);color:var(--red)}
+
+/* TOTAL */
+.total-card{background:var(--surface);border:1px solid var(--yellow);border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+.total-label{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.total-amount{font-family:'DM Mono',monospace;font-size:1.6rem;font-weight:500;color:var(--yellow)}
+
+/* BUTTONS */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:13px 18px;border-radius:10px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;letter-spacing:.05em;cursor:pointer;border:none;transition:all .2s;width:100%}
+.btn-wa{background:#25D366;color:#000}
+.btn-wa:active{background:#1da851}
+.btn-copy{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.btn-copy:active{background:var(--surface)}
+.btn-add{background:var(--surface2);color:var(--yellow);border:1px solid var(--yellow);margin-top:8px}
+.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+
+/* EMPTY */
+.empty{text-align:center;padding:24px;color:var(--muted);font-size:.85rem}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface);border:1px solid var(--yellow);border-radius:10px;padding:10px 20px;font-size:.85rem;z-index:999;transition:transform .3s;white-space:nowrap;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* PRESUPUESTO PREVIEW */
+.preview-box{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;font-family:'DM Mono',monospace;font-size:.75rem;color:var(--text);line-height:1.6;white-space:pre-wrap;margin-top:10px;display:none}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-brand">
+    <div class="brand-title">MICHELIN · Grimaldi</div>
+    <div class="brand-sub">Cotizador de Refacciones 2025</div>
+  </div>
+  <div class="header-badge">v1.0</div>
+</div>
+
+<div class="main">
+
+  <!-- DATOS DEL PRESUPUESTO -->
+  <div class="sec-label">Datos del Presupuesto</div>
+  <div class="card">
+    <div class="field-row">
+      <div class="field">
+        <label>Asesor</label>
+        <select id="asesor">
+          <option value="">— Seleccionar —</option>
+          <option value="VICTOR BOLAÑOS">VICTOR BOLAÑOS</option>
+          <option value="MARTHA AMBRIZ">MARTHA AMBRIZ</option>
+          <option value="ERIKA JULIAN">ERIKA JULIAN</option>
+          <option value="ALEJANDRA OLMEDO">ALEJANDRA OLMEDO</option>
+          <option value="RUBY RIZO">RUBY RIZO</option>
+          <option value="VICENTE CANCHE">VICENTE CANCHE</option>
+          <option value="XIPATLY MALDONADO">XIPATLY MALDONADO</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Fecha</label>
+        <input type="date" id="fecha">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Cliente</label>
+        <input type="text" id="cliente" placeholder="Nombre del cliente">
+      </div>
+      <div class="field">
+        <label>Teléfono</label>
+        <input type="tel" id="telefono" placeholder="10 dígitos">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Vehículo</label>
+        <input type="text" id="auto" placeholder="Ej: ODYSSEY 2013">
+      </div>
+      <div class="field">
+        <label>OS / Folio</label>
+        <input type="text" id="os" placeholder="Número de orden">
+      </div>
+    </div>
+  </div>
+
+  <!-- TIPO DE CLIENTE -->
+  <div class="sec-label">Tipo de Cliente</div>
+  <div class="card">
+    <div class="tipo-btns">
+      <button class="tipo-btn active" onclick="setTipo('flotilla')">FLOTILLA</button>
+      <button class="tipo-btn" onclick="setTipo('publico')">PÚBLICO</button>
+      <button class="tipo-btn" onclick="setTipo('premium')">PREMIUM</button>
+    </div>
+  </div>
+
+  <!-- AGREGAR SERVICIO -->
+  <div class="sec-label">Agregar Servicio / Refacción</div>
+  <div class="card">
+    <div class="search-wrap">
+      <span class="ico">🔍</span>
+      <input type="search" id="svc-search" placeholder="Buscar por nombre o código (ej: BM, FLECHA, BALERO)..." oninput="searchSvc()" autocomplete="off">
+      <div class="results-list" id="results-list"></div>
+    </div>
+    <div class="field-row3">
+      <div class="field">
+        <label>Proveedor</label>
+        <select id="svc-prov">
+          <option value="AUTOZONE">AUTOZONE</option>
+          <option value="FRAMEX">FRAMEX</option>
+          <option value="REF. RINCÓN">REF. RINCÓN</option>
+          <option value="BIG AUTO">BIG AUTO</option>
+          <option value="OTRO">OTRO</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Disponibilidad</label>
+        <select id="svc-disp">
+          <option value="INMEDIATA">INMEDIATA</option>
+          <option value="24 HRS">24 HRS</option>
+          <option value="48 HRS">48 HRS</option>
+          <option value="PEDIDO">PEDIDO</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Urgencia</label>
+        <select id="svc-urg">
+          <option value="1">1 — Normal</option>
+          <option value="2">2 — Importante</option>
+          <option value="3">3 — Urgente</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Cantidad</label>
+        <input type="number" id="svc-qty" value="1" min="1" step="1">
+      </div>
+      <div class="field">
+        <label>Precio unitario</label>
+        <input type="number" id="svc-price" placeholder="0.00" step="0.01">
+      </div>
+    </div>
+    <button class="btn btn-add" onclick="addItem()">＋ Agregar al presupuesto</button>
+  </div>
+
+  <!-- ITEMS -->
+  <div class="sec-label">Presupuesto</div>
+  <div id="items-container">
+    <div class="empty" id="empty-msg">Sin servicios agregados aún.</div>
+  </div>
+
+  <div class="total-card">
+    <span class="total-label">Total</span>
+    <span class="total-amount" id="total-display">$0.00</span>
+  </div>
+
+  <!-- PREVIEW -->
+  <div class="sec-label" id="prev-label" style="display:none">Vista previa del mensaje</div>
+  <pre class="preview-box" id="preview-box"></pre>
+
+  <div class="btn-row" style="margin-top:16px">
+    <button class="btn btn-copy" onclick="copyMsg()">📋 Copiar</button>
+    <button class="btn btn-wa" onclick="sendWA()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.122 1.533 5.858L0 24l6.335-1.521A11.942 11.942 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.848 0-3.575-.5-5.065-1.373l-.361-.216-3.75.9.937-3.659-.236-.374A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+      Enviar WA
+    </button>
+  </div>
+
+  <div style="margin-top:10px">
+    <button class="btn btn-copy" onclick="clearAll()" style="color:var(--red);border-color:var(--red)">🗑 Limpiar todo</button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CATALOG (exact data from LP 2024 sheet) ─────────────────────────────────
+const CATALOG = [
+  {cg:'AL1E',cat:'SERV LLANTERA',desc:'ALINEACIÓN DE 1 EJE DELANTERO',f:594,p:660,pr:759,nom:'ZLQ13'},
+  {cg:'AL2E',cat:'SERV LLANTERA',desc:'ALINEACIÓN DE 2 EJES (DELANTERO Y TRASERO)',f:1152,p:1280,pr:1480,nom:'ZLQ08'},
+  {cg:'BA',cat:'SERV LLANTERA',desc:'BALANCEO DE 1 RUEDA',f:112.5,p:125,pr:150,nom:'ZLQ04'},
+  {cg:'BAE',cat:'SERV LLANTERA',desc:'BALANCEO DE 1 RUEDA MAYOR A RIN 18',f:144,p:160,pr:185,nom:'ZLQ06'},
+  {cg:'MDL',cat:'SERV LLANTERA',desc:'DESMONTAJE / MONTAJE POR RIN 13" - 16"',f:90,p:100,pr:115,nom:'ZLD01'},
+  {cg:'MDL+',cat:'SERV LLANTERA',desc:'DESMONTAJE / MONTAJE POR RIN 17" - 18"',f:144,p:160,pr:185,nom:'ZLD02'},
+  {cg:'MDLR+',cat:'SERV LLANTERA',desc:'DESMONTAJE / MONTAJE ZP O RUNFLAT',f:382.5,p:425,pr:485,nom:'ZLD05'},
+  {cg:'MDLR',cat:'SERV LLANTERA',desc:'DESMONTAJE / MONTAJE POR RIN 19" O RUN FLAT',f:277.2,p:308,pr:360,nom:'ZLD03'},
+  {cg:'MDLB',cat:'SERV LLANTERA',desc:'DESMONTAJE / MONTAJE POR RIN BLINDADO',f:1125,p:1250,pr:1250,nom:'ZLD04'},
+  {cg:'ROT',cat:'SERV LLANTERA',desc:'ROTACIÓN DE 4 RUEDAS',f:162,p:180,pr:200,nom:'ZLQ07'},
+  {cg:'N2',cat:'SERV LLANTERA',desc:'INFLADO CON NITROGENO DE 1 LLANTA',f:90,p:100,pr:115,nom:'ZLQ16'},
+  {cg:'TV-413',cat:'SERV LLANTERA',desc:'VALVULA DE HULE P/AUTO 1 1/4 LARGO',f:34.65,p:38.5,pr:45,nom:'TV-413'},
+  {cg:'N2T',cat:'SERV LLANTERA',desc:'TAPON METALICO PARA VALVULA NITROGENO N2',f:31.5,p:35,pr:40,nom:'N2'},
+  {cg:'N2+',cat:'SERV LLANTERA',desc:'INFLADO CON NITROGENO DE 1 LLANTA MAYOR A RIN 18',f:108,p:120,pr:138,nom:'ZLQ17'},
+  {cg:'BDB',cat:'SUSPENSION',desc:'BALERO DOBLE SIN CAMBIAR LA MAZA',f:720,p:800,pr:950,nom:'ZLP11'},
+  {cg:'BM',cat:'SUSPENSION',desc:'BALERO MAZA',f:720,p:800,pr:950,nom:'ZLN19'},
+  {cg:'BMD',cat:'SUSPENSION',desc:'BALERO MAZA (DIFICIL)',f:1080,p:1200,pr:1380,nom:'ZLN20'},
+  {cg:'VD',cat:'SUSPENSION',desc:'VARILLA DE DIRECCION',f:450,p:500,pr:580,nom:'ZLP02'},
+  {cg:'VDD',cat:'SUSPENSION',desc:'VARILLA DE DIRECCION (DIFICIL)',f:648,p:720,pr:828,nom:'ZLP03'},
+  {cg:'TD',cat:'SUSPENSION',desc:'TERMINAL DE DIRECCION',f:333,p:370,pr:450,nom:'ZLP35'},
+  {cg:'TDD',cat:'SUSPENSION',desc:'TERMINALES DE DIRECCION (DIFICIL)',f:540,p:600,pr:690,nom:'ZLP36'},
+  {cg:'BIO',cat:'SUSPENSION',desc:'BIRLO C/U',f:252,p:280,pr:322,nom:'ZLP15'},
+  {cg:'BID',cat:'SUSPENSION',desc:'BIRLO C/U DIFICIL (DESMONTANDO MAZA)',f:900,p:1000,pr:1150,nom:'ZLP05'},
+  {cg:'BIS',cat:'SUSPENSION',desc:'SACAR BIRLO DE SEGURIDAD C/U',f:702,p:780,pr:900,nom:'ZLP71'},
+  {cg:'STRUT',cat:'SUSPENSION',desc:'STRUT C/U',f:432,p:480,pr:552,nom:'ZLR10'},
+  {cg:'STRUTD',cat:'SUSPENSION',desc:'STRUT DIFICIL C/U',f:702,p:780,pr:900,nom:'ZLR11'},
+  {cg:'AM',cat:'SUSPENSION',desc:'AMORTIGUADOR C/U',f:265.5,p:295,pr:350,nom:'ZLR01'},
+  {cg:'JAMA',cat:'SUSPENSION',desc:'JGO DE AMORTIGUADOR DE AIRE',f:1350,p:1500,pr:1725,nom:'ZLR12'},
+  {cg:'CMC',cat:'SUSPENSION',desc:'CARTUCHO MACPHERSON C/U',f:720,p:800,pr:980,nom:'ZLR13'},
+  {cg:'JRD',cat:'SUSPENSION',desc:'JUEGO DE RESORTES DEL',f:1152,p:1280,pr:1480,nom:'ZLP33'},
+  {cg:'JRDD',cat:'SUSPENSION',desc:'JGO DE RESORTES DELANTEROS O TRASEROS (DIFICIL)',f:1620,p:1800,pr:2100,nom:'ZLP34'},
+  {cg:'BTR',cat:'SUSPENSION',desc:'BARRA DE TORSION POR LADO',f:927,p:1030,pr:1180,nom:'ZLP25'},
+  {cg:'BAM',cat:'SUSPENSION',desc:'BASE DE AMORTIGUADOR C/U',f:702,p:780,pr:897,nom:'ZLR14'},
+  {cg:'GRB',cat:'SUSPENSION',desc:'CUBRE POLVO Y GOMA DE REBOTE',f:252,p:280,pr:380,nom:''},
+  {cg:'BAMSTR',cat:'SUSPENSION',desc:'BASE DE AMORTIGUADOR C/U CAMBIANDO STRUT',f:252,p:280,pr:350,nom:'ZLR16'},
+  {cg:'BAMD',cat:'SUSPENSION',desc:'BASE DE AMORTIGUADOR (DIFICIL)',f:684,p:760,pr:875,nom:'ZLR15'},
+  {cg:'AMD',cat:'SUSPENSION',desc:'AMORTIGUADOR DE DIRECCION',f:459,p:510,pr:580,nom:'ZLR08'},
+  {cg:'AMC',cat:'SUSPENSION',desc:'AMORTIGUADOR DE COFRE, CAJUELA O 5TA PUERTA',f:252,p:280,pr:350,nom:'ZLR09'},
+  {cg:'CSTRUT',cat:'SUSPENSION',desc:'CORREDERAS A STRUTS POR LADO',f:900,p:1000,pr:1150,nom:'ZLP48'},
+  {cg:'CJH',cat:'SUSPENSION',desc:'CUBRE POLVO DE JUNTA HOMOCINETICA POR LADO',f:801,p:890,pr:1100,nom:'ZLP23'},
+  {cg:'JH',cat:'SUSPENSION',desc:'JUNTA HOMOCINETICA',f:738,p:820,pr:950,nom:'ZLP38'},
+  {cg:'FC',cat:'SUSPENSION',desc:'FLECHA COMPLETA',f:1080,p:1200,pr:1480,nom:'ZLP58'},
+  {cg:'JGBES',cat:'SUSPENSION',desc:'JGO DE GOMAS DE BARRA ESTABILIZADORA (POR LADO)',f:522,p:580,pr:680,nom:'ZLP06'},
+  {cg:'JGBESD',cat:'SUSPENSION',desc:'JGO DE GOMAS DE BARRA ESTABILIZADORA DIFICIL',f:702,p:780,pr:900,nom:'ZLP62'},
+  {cg:'HO',cat:'SUSPENSION',desc:'HORQUILLA',f:612,p:680,pr:785,nom:'ZLP07'},
+  {cg:'HOD',cat:'SUSPENSION',desc:'HORQUILLA (DIFICIL)',f:927,p:1030,pr:1185,nom:'ZLP08'},
+  {cg:'RO',cat:'SUSPENSION',desc:'ROTULA',f:522,p:580,pr:680,nom:'ZLP09'},
+  {cg:'ROD',cat:'SUSPENSION',desc:'ROTULA (DIFICIL)',f:747,p:830,pr:960,nom:'ZLP10'},
+  {cg:'BES',cat:'SUSPENSION',desc:'BARRA ESTABILIZADORA',f:702,p:780,pr:600,nom:'ZLP47'},
+  {cg:'MS',cat:'SUSPENSION',desc:'MANGO DE SUSPENSION',f:1080,p:1200,pr:1400,nom:'ZLP32'},
+  {cg:'CD',cat:'SUSPENSION',desc:'CAJA DE DIRECCION',f:1620,p:1800,pr:2100,nom:'ZLP37'},
+  {cg:'CRM',cat:'SUSPENSION',desc:'CREMALLERA',f:2025,p:2250,pr:2600,nom:'ZLP65'},
+  {cg:'CRMD',cat:'SUSPENSION',desc:'CREMALLERA (BAJANDO EL PUENTE)',f:2700,p:3000,pr:3450,nom:'ZLP64'},
+  {cg:'TES',cat:'SUSPENSION',desc:'TORNILLO ESTABILIZADOR',f:252,p:280,pr:350,nom:'ZLP39'},
+  {cg:'BUH',cat:'SUSPENSION',desc:'BUJE DE HORQUILLA C/U',f:432,p:480,pr:580,nom:'ZLP69'},
+  {cg:'BUHD',cat:'SUSPENSION',desc:'BUJE DE HORQUILLA C/U (DIFICIL)',f:612,p:680,pr:785,nom:'ZLP70'},
+  {cg:'BUF',cat:'SUSPENSION',desc:'BUJE FLOTANTE',f:612,p:680,pr:785,nom:'ZLP41'},
+  {cg:'BUFD',cat:'SUSPENSION',desc:'BUJE FLOTANTE (DIFICIL)',f:900,p:1000,pr:1150,nom:'ZLP42'},
+  {cg:'JBUMU',cat:'SUSPENSION',desc:'JGO DE BUJES DE MUELLE POR PAR',f:1080,p:1200,pr:1380,nom:'ZLP44'},
+  {cg:'NABT',cat:'SUSPENSION',desc:'NIVELAR ALTURA (BARRAS DE TORSION) AMBOS LADOS',f:756,p:840,pr:980,nom:'ZLP43'},
+  {cg:'CR',cat:'SUSPENSION',desc:'CRUCETA',f:738,p:820,pr:950,nom:'ZLP56'},
+  {cg:'BAU',cat:'SUSPENSION',desc:'BRAZO AUXILIAR',f:558,p:620,pr:720,nom:'ZLP16'},
+  {cg:'BAUD',cat:'SUSPENSION',desc:'BRAZO AUXILIAR (DIFICIL)',f:738,p:820,pr:950,nom:'ZLP17'},
+  {cg:'BPT',cat:'SUSPENSION',desc:'BRAZO PITMAN',f:558,p:620,pr:720,nom:'ZLP63'},
+  {cg:'BAC',cat:'SUSPENSION',desc:'BARRA CENTRAL',f:702,p:780,pr:900,nom:'ZLP26'},
+  {cg:'JGT',cat:'SUSPENSION',desc:'JGO GOMAS DE TIRANTE',f:702,p:780,pr:900,nom:'ZLP29'},
+  {cg:'JGTD',cat:'SUSPENSION',desc:'JGO GOMAS DE TIRANTE (DIFICIL)',f:990,p:1100,pr:1280,nom:'ZLP30'},
+  {cg:'CLUTCH',cat:'CLUTCH',desc:'CLUTCH AUTO COMPACTO',f:2682,p:2980,pr:3500,nom:'ZLM25'},
+  {cg:'CLUTCHS',cat:'CLUTCH',desc:'CLUTCH AUTO SEDAN',f:3150,p:3500,pr:4100,nom:'ZLM26'},
+  {cg:'CLUTCHD',cat:'CLUTCH',desc:'CLUTCH DIFICIL',f:3600,p:4000,pr:4600,nom:'ZLM66'},
+  {cg:'CLUTCHCC',cat:'CLUTCH',desc:'CAMIONETAS COMERCIALES MENOR A 1.5 TON',f:3780,p:4200,pr:4850,nom:'ZLM22'},
+  {cg:'CCLUTCH',cat:'CLUTCH',desc:'CHICOTE DE CLUTCH',f:612,p:680,pr:785,nom:'ZLM39'},
+  {cg:'FRD',cat:'FRENOS',desc:'FRENOS DE DISCO',f:522,p:580,pr:680,nom:'ZLN01'},
+  {cg:'FRT',cat:'FRENOS',desc:'FRENOS DE TAMBOR',f:702,p:780,pr:895,nom:'ZLN02'},
+  {cg:'FRTD',cat:'FRENOS',desc:'FRENOS TRASEROS CON SISTEMA DOBLE (TAMBOR)',f:927,p:1030,pr:1185,nom:'ZLN31'},
+  {cg:'LFR',cat:'FRENOS',desc:'LIQUIDO DE FRENOS',f:432,p:480,pr:580,nom:'ZLN11'},
+  {cg:'LAFR',cat:'FRENOS',desc:'LIMPIEZA Y AJUSTE DE FRENOS',f:432,p:480,pr:580,nom:'ZLN10'},
+  {cg:'HFR',cat:'FRENOS',desc:'HERRAJES POR LADO',f:396,p:440,pr:520,nom:'ZLN26'},
+  {cg:'DFRD',cat:'FRENOS',desc:'DISCOS DELANTEROS',f:396,p:440,pr:520,nom:''},
+  {cg:'DFRT',cat:'FRENOS',desc:'DISCOS TRASEROS',f:396,p:440,pr:520,nom:'ZLN29'},
+  {cg:'RDD',cat:'FRENOS',desc:'RECTIFICADO DISCOS DELANTEROS',f:301.5,p:335,pr:385,nom:''},
+  {cg:'RDT',cat:'FRENOS',desc:'RECTIFICADO DISCOS TRASEROS',f:301.5,p:335,pr:385,nom:'ZLN13'},
+  {cg:'RDG',cat:'FRENOS',desc:'RECTIFICADO DE DISCO GRANDES',f:405,p:450,pr:580,nom:''},
+  {cg:'RTG',cat:'FRENOS',desc:'RECTIFICADO DE TAMBOR GRANDES',f:405,p:450,pr:580,nom:'ZLN14'},
+  {cg:'BOS',cat:'FRENOS',desc:'BOSTER',f:1242,p:1380,pr:1600,nom:'ZLN08'},
+  {cg:'CFRM',cat:'FRENOS',desc:'CHICOTE DE FRENO DE MANO POR LADO',f:540,p:600,pr:690,nom:'ZLN09'},
+  {cg:'MFR',cat:'FRENOS',desc:'MANGUERAS DE FRENOS',f:315,p:350,pr:480,nom:'ZLN15'},
+  {cg:'BFR',cat:'FRENOS',desc:'BOMBA DE FRENOS (CILINDRO MAESTRO)',f:1512,p:1680,pr:1980,nom:'ZLN17'},
+  {cg:'BFRD',cat:'FRENOS',desc:'BOMBA DE FRENOS (CILINDRO MAESTRO) DIFICIL',f:1980,p:2200,pr:2580,nom:'ZLN24'},
+  {cg:'CFRT',cat:'FRENOS',desc:'CILINDRO DE RUEDA POR LADO',f:315,p:350,pr:480,nom:'ZLN16'},
+  {cg:'JLPS',cat:'FRENOS',desc:'JGO DE LIGAS Y/O PISTONES SENCILLOS DE CALIPER',f:927,p:1030,pr:1200,nom:'ZLN06'},
+  {cg:'JLPD',cat:'FRENOS',desc:'JGO DE LIGAS Y/O PISTONES DOBLES DE CALIPER',f:1332,p:1480,pr:1800,nom:'ZLN05'},
+  {cg:'LEB',cat:'FRENOS',desc:'LAVADO Y ENGRASADO DE BALEROS CONICOS (POR LADO)',f:432,p:480,pr:580,nom:'ZLN30'},
+  {cg:'RR',cat:'FRENOS',desc:'RETEN DE RUEDA (POR LADO)',f:252,p:280,pr:380,nom:'ZLN07'},
+  {cg:'ACF',cat:'LUBRICACION',desc:'ACEITE Y FILTRO',f:405,p:450,pr:580,nom:''},
+  {cg:'CTC',cat:'LUBRICACION',desc:'CAMBIO DE TAPON DE CARTER',f:252,p:280,pr:380,nom:'ZLL07'},
+  {cg:'JCTM',cat:'LUBRICACION',desc:'JUNTAS DE CARTER TRANS Y MOTOR',f:900,p:1000,pr:1150,nom:'ZLL05'},
+  {cg:'TJC',cat:'LUBRICACION',desc:'JUNTA DE CARTER TRANS Y MOTOR (DIFICIL)',f:1512,p:1680,pr:1950,nom:'ZLL06'},
+  {cg:'IG',cat:'REVISION GENERAL',desc:'INSPECCION GENERAL',f:612,p:680,pr:785,nom:'ZLO05'},
+  {cg:'BG',cat:'AFINACION',desc:'BOMBA DE COMBUSTIBLE ELECTRICA SUMERGIBLE',f:720,p:800,pr:1200,nom:'ZLM35'},
+  {cg:'BGT',cat:'AFINACION',desc:'BOMBA DE GASOLINA BAJANDO EL TANQUE',f:2250,p:2500,pr:3000,nom:'ZLE29'},
+  {cg:'BU',cat:'AFINACION',desc:'BUJIAS 4,6,8 CIL',f:612,p:680,pr:785,nom:'ZLE18'},
+  {cg:'BUD',cat:'AFINACION',desc:'BUJIAS ACCESO DIFICIL',f:1152,p:1280,pr:1480,nom:'ZLE20'},
+  {cg:'BI',cat:'AFINACION',desc:'BOBINA INDEPENDIENTE C/U',f:342,p:380,pr:480,nom:'ZLE21'},
+  {cg:'JCB',cat:'AFINACION',desc:'JGO CABLES DE BUJIAS',f:360,p:400,pr:480,nom:'ZLE11'},
+  {cg:'CBD',cat:'AFINACION',desc:'CAMBIO DE CABLES DE BUJIAS ACCESO DIFICIL',f:540,p:600,pr:690,nom:'ZLE12'},
+  {cg:'FA',cat:'AFINACION',desc:'FILTRO DE AIRE',f:225,p:250,pr:300,nom:'ZLK06'},
+  {cg:'FAD',cat:'AFINACION',desc:'FILTRO DE AIRE DIFICIL',f:432,p:480,pr:580,nom:'ZLK09'},
+  {cg:'FAC',cat:'AFINACION',desc:'FILTRO DE AIRE DE CABINA',f:359.1,p:399,pr:480,nom:'ZLK07'},
+  {cg:'FG',cat:'AFINACION',desc:'FILTRO DE GASOLINA',f:252,p:280,pr:380,nom:'ZLK11'},
+  {cg:'LIB',cat:'AFINACION',desc:'LAVADO DE INYECTORES CON BOYA',f:702,p:780,pr:980,nom:'ZLK05'},
+  {cg:'LCA',cat:'AFINACION',desc:'LAVADO DEL CUERPO DE ACELERACION',f:359.1,p:399,pr:480,nom:'ZLM33'},
+  {cg:'LM',cat:'AFINACION',desc:'LAVADO DE MOTOR (EXTERIOR)',f:342,p:380,pr:450,nom:'ZLV01'},
+  {cg:'B',cat:'SERV MOTOR',desc:'BANDA DE MOTOR',f:315,p:350,pr:480,nom:'ZLM02'},
+  {cg:'BUM',cat:'SERV MOTOR',desc:'BANDA DE MOTOR DIFICIL',f:765,p:850,pr:1200,nom:'ZLM03'},
+  {cg:'BD',cat:'SERV MOTOR',desc:'BANDA DE DISTRIBUCIÓN',f:2250,p:2500,pr:3000,nom:'ZLM08'},
+  {cg:'BDD',cat:'SERV MOTOR',desc:'BANDA DE DISTRIBUCIÓN (DIFICIL)',f:4320,p:4800,pr:0,nom:'ZLM07'},
+  {cg:'BAA',cat:'SERV MOTOR',desc:'BANDA DE AIRE ACONDICIONADO',f:315,p:350,pr:480,nom:'ZLM41'},
+  {cg:'PT',cat:'SERV MOTOR',desc:'POLEA TENSORA DE BANDAS',f:738,p:820,pr:1100,nom:'ZLM42'},
+  {cg:'JTP',cat:'SERV MOTOR',desc:'JUNTA DE TAPA DE PUNTERIAS',f:648,p:720,pr:900,nom:'ZLM43'},
+  {cg:'SM',cat:'SERV MOTOR',desc:'SOPORTE DE MOTOR C/U',f:612,p:680,pr:785,nom:'ZLP21'},
+  {cg:'SMD',cat:'SERV MOTOR',desc:'SOPORTE DE MOTOR (DIFICIL) C/U',f:1215,p:1350,pr:1600,nom:'ZLP22'},
+  {cg:'A',cat:'ENFRIAMIENTO',desc:'ANTICONGELANTE',f:450,p:500,pr:680,nom:'ZLM01'},
+  {cg:'TT',cat:'ENFRIAMIENTO',desc:'TERMOSTATO',f:522,p:580,pr:780,nom:'ZLM13'},
+  {cg:'TTD',cat:'ENFRIAMIENTO',desc:'TERMOSTATO (DIFICIL)',f:1890,p:2100,pr:2500,nom:'ZLM14'},
+  {cg:'ME',cat:'ENFRIAMIENTO',desc:'MANGUERA DEL SISTEMA DE ENFRIAMIENTO',f:342,p:380,pr:480,nom:'ZLM44'},
+  {cg:'RA',cat:'ENFRIAMIENTO',desc:'RADIADOR',f:1080,p:1200,pr:1500,nom:'ZLM15'},
+  {cg:'RAD',cat:'ENFRIAMIENTO',desc:'RADIADOR (DIFICIL)',f:1620,p:1800,pr:2200,nom:'ZLM16'},
+  {cg:'DA',cat:'ENFRIAMIENTO',desc:'DEPOSITO DE ANTICONGELANTE',f:432,p:480,pr:580,nom:'ZLM45'},
+  {cg:'BAG',cat:'ENFRIAMIENTO',desc:'BOMBA DE AGUA',f:1215,p:1350,pr:1600,nom:'ZLM11'},
+  {cg:'BAGD',cat:'ENFRIAMIENTO',desc:'BOMBA DE AGUA (DIFICIL)',f:2250,p:2500,pr:3000,nom:'ZLM12'},
+  {cg:'BT',cat:'ENFRIAMIENTO',desc:'BULBO DE TEMPERATURA',f:342,p:380,pr:580,nom:'ZLM46'},
+  {cg:'DEB',cat:'DIAGNOSTICO',desc:'DIAGNOSTICO BASICO CON ESCANER',f:612,p:680,pr:785,nom:'ZLM62'},
+  {cg:'BAT',cat:'ELECTRICO',desc:'BATERIA',f:405,p:450,pr:580,nom:'ZLE01'},
+  {cg:'BAD',cat:'ELECTRICO',desc:'BATERIA ACCESO DIFICIL',f:1602,p:1780,pr:2050,nom:'ZLE02'},
+  {cg:'BO',cat:'ELECTRICO',desc:'BOBINA',f:359.1,p:399,pr:480,nom:'ZLE24'},
+  {cg:'DSC',cat:'ELECTRICO',desc:'DIAGNOSTICO SISTEMA DE CARGA',f:342,p:380,pr:480,nom:'ZLE06'},
+  {cg:'TB',cat:'ELECTRICO',desc:'TERMINAL DE BATERIA',f:252,p:280,pr:380,nom:'ZLE26'},
+  {cg:'CLB',cat:'VARIOS',desc:'CAMBIO DE LIMPIAPARABRISAS (POR PAR)',f:126,p:140,pr:165,nom:'ZLS01'},
+  {cg:'CADIF',cat:'DIFERENCIAL',desc:'CAMBIO DE ACEITE DE DIFERENCIAL',f:432,p:480,pr:580,nom:''},
+];
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+let tipoCliente = 'flotilla';
+let items = [];
+let selectedSvc = null;
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+
+function setTipo(t){
+  tipoCliente = t;
+  document.querySelectorAll('.tipo-btn').forEach(b=>{
+    b.classList.toggle('active', b.textContent.trim().toLowerCase()===t ||
+      (t==='flotilla'&&b.textContent.includes('FLOTILLA'))||
+      (t==='publico'&&b.textContent.includes('PÚBLICO'))||
+      (t==='premium'&&b.textContent.includes('PREMIUM')));
+  });
+  // Recalc prices on existing items
+  recalcAll();
+}
+
+function getPrice(svc){
+  if(tipoCliente==='flotilla') return svc.f;
+  if(tipoCliente==='premium') return svc.pr;
+  return svc.p;
+}
+
+// ── SEARCH ───────────────────────────────────────────────────────────────────
+function searchSvc(){
+  const q = document.getElementById('svc-search').value.toUpperCase().trim();
+  const list = document.getElementById('results-list');
+  if(!q){ list.classList.remove('open'); selectedSvc=null; return; }
+
+  const hits = CATALOG.filter(s=>
+    s.cg.toUpperCase().includes(q)||
+    s.desc.toUpperCase().includes(q)||
+    (s.nom&&s.nom.toUpperCase().includes(q))
+  ).slice(0,12);
+
+  if(!hits.length){ list.classList.remove('open'); return; }
+
+  list.innerHTML = hits.map(s=>`
+    <div class="result-item" onclick="selectSvc('${s.cg}')">
+      <div>
+        <div class="ri-name">${s.desc}</div>
+        <div class="ri-cat">${s.cg} · ${s.cat} ${s.nom?'· '+s.nom:''}</div>
+      </div>
+      <div class="ri-price">$${getPrice(s).toFixed(2)}</div>
+    </div>
+  `).join('');
+  list.classList.add('open');
+}
+
+function selectSvc(cg){
+  const svc = CATALOG.find(s=>s.cg===cg);
+  if(!svc) return;
+  selectedSvc = svc;
+  document.getElementById('svc-search').value = `${svc.cg} — ${svc.desc}`;
+  document.getElementById('svc-price').value = getPrice(svc).toFixed(2);
+  document.getElementById('results-list').classList.remove('open');
+}
+
+document.addEventListener('click', e=>{
+  if(!e.target.closest('.search-wrap')) document.getElementById('results-list').classList.remove('open');
+});
+
+// ── ADD ITEM ─────────────────────────────────────────────────────────────────
+function addItem(){
+  const price = parseFloat(document.getElementById('svc-price').value)||0;
+  const qty = parseInt(document.getElementById('svc-qty').value)||1;
+  const prov = document.getElementById('svc-prov').value;
+  const disp = document.getElementById('svc-disp').value;
+  const urg = document.getElementById('svc-urg').value;
+
+  if(!selectedSvc && !price){
+    toast('⚠️ Selecciona un servicio primero'); return;
+  }
+
+  const desc = selectedSvc ? selectedSvc.desc : document.getElementById('svc-search').value||'Servicio';
+  const cg = selectedSvc ? selectedSvc.cg : '';
+  const cat = selectedSvc ? selectedSvc.cat : '';
+
+  items.push({ id: Date.now(), desc, cg, cat, qty, price, prov, disp, urg });
+  render();
+  // Reset
+  document.getElementById('svc-search').value='';
+  document.getElementById('svc-price').value='';
+  document.getElementById('svc-qty').value='1';
+  selectedSvc=null;
+  toast('✅ Agregado al presupuesto');
+}
+
+function removeItem(id){
+  items = items.filter(i=>i.id!==id);
+  render();
+}
+
+function recalcAll(){
+  // When tipo changes, update prices that match catalog
+  items = items.map(item=>{
+    const svc = CATALOG.find(s=>s.cg===item.cg);
+    if(svc) item.price = getPrice(svc);
+    return item;
+  });
+  render();
+}
+
+// ── RENDER ───────────────────────────────────────────────────────────────────
+function render(){
+  const container = document.getElementById('items-container');
+  const empty = document.getElementById('empty-msg');
+
+  if(!items.length){
+    container.innerHTML='<div class="empty" id="empty-msg">Sin servicios agregados aún.</div>';
+    document.getElementById('total-display').textContent='$0.00';
+    document.getElementById('preview-box').style.display='none';
+    document.getElementById('prev-label').style.display='none';
+    return;
+  }
+
+  const urgLabels = {1:'Normal',2:'Importante',3:'Urgente'};
+  container.innerHTML = `
+    <div class="items-header">
+      <span>Descripción</span><span style="text-align:center">Cant</span><span>Proveedor</span><span style="text-align:right">Total</span><span></span>
+    </div>
+    ${items.map(item=>`
+      <div class="item-row">
+        <div>
+          <div class="i-desc">${item.desc}</div>
+          <div class="i-cg">${item.cg} ${item.cat?'· '+item.cat:''} · ${item.disp}</div>
+          <span class="i-urg urg-${item.urg}">${urgLabels[item.urg]||'Normal'}</span>
+        </div>
+        <div class="i-qty"><input type="number" value="${item.qty}" min="1" onchange="updateQty(${item.id},this.value)"></div>
+        <div class="i-prov">
+          <select onchange="updateProv(${item.id},this.value)">
+            ${['AUTOZONE','FRAMEX','REF. RINCÓN','BIG AUTO','OTRO'].map(p=>`<option${p===item.prov?' selected':''}>${p}</option>`).join('')}
+          </select>
+        </div>
+        <div class="i-price">$${(item.price*item.qty).toFixed(2)}</div>
+        <div class="i-del"><button onclick="removeItem(${item.id})">✕</button></div>
+      </div>
+    `).join('')}
+  `;
+
+  const total = items.reduce((s,i)=>s+i.price*i.qty,0);
+  document.getElementById('total-display').textContent=`$${total.toFixed(2)}`;
+  updatePreview();
+  document.getElementById('preview-box').style.display='block';
+  document.getElementById('prev-label').style.display='block';
+}
+
+function updateQty(id,val){
+  const item=items.find(i=>i.id===id);
+  if(item){ item.qty=parseInt(val)||1; render(); }
+}
+function updateProv(id,val){
+  const item=items.find(i=>i.id===id);
+  if(item){ item.prov=val; }
+}
+
+// ── PREVIEW / MESSAGE ─────────────────────────────────────────────────────────
+function buildMsg(){
+  const asesor = document.getElementById('asesor').value||'Su asesor';
+  const cliente = document.getElementById('cliente').value||'Estimado Cliente';
+  const auto = document.getElementById('auto').value||'su vehículo';
+  const os = document.getElementById('os').value||'';
+  const fecha = document.getElementById('fecha').value||new Date().toLocaleDateString('es-MX');
+  const tipo = tipoCliente==='flotilla'?'Flotilla':tipoCliente==='premium'?'Premium':'Público';
+  const total = items.reduce((s,i)=>s+i.price*i.qty,0);
+
+  let msg = `*Multillantas y Servicios Grimaldi S.A. de C.V.*\n`;
+  msg += `*PRESUPUESTO*\n`;
+  msg += `${'─'.repeat(30)}\n`;
+  if(os) msg += `📋 OS: ${os}\n`;
+  msg += `📅 Fecha: ${fecha}\n`;
+  msg += `🚗 Vehículo: *${auto}*\n`;
+  msg += `👤 Asesor: ${asesor}\n`;
+  msg += `💼 Tipo: ${tipo}\n`;
+  msg += `${'─'.repeat(30)}\n\n`;
+  msg += `Estimado/a *${cliente}*, por este medio le hacemos llegar el presupuesto solicitado:\n\n`;
+
+  items.forEach((item,i)=>{
+    const urgStr = item.urg==='3'?'🔴':item.urg==='2'?'🟡':'🟢';
+    msg += `${urgStr} *${i+1}. ${item.desc}*\n`;
+    if(item.cg) msg += `   Código: ${item.cg}\n`;
+    msg += `   Cant: ${item.qty} | Proveedor: ${item.prov}\n`;
+    msg += `   Disponibilidad: ${item.disp}\n`;
+    msg += `   Precio: $${(item.price*item.qty).toFixed(2)}\n\n`;
+  });
+
+  msg += `${'─'.repeat(30)}\n`;
+  msg += `💰 *TOTAL: $${total.toFixed(2)} MXN*\n`;
+  msg += `${'─'.repeat(30)}\n\n`;
+  msg += `Precios sujetos a cambio sin previo aviso.\n`;
+  msg += `Cualquier duda, con gusto le atendemos. 🤝`;
+  return msg;
+}
+
+function updatePreview(){
+  if(!items.length) return;
+  document.getElementById('preview-box').textContent = buildMsg();
+}
+
+function copyMsg(){
+  if(!items.length){ toast('⚠️ Sin servicios en el presupuesto'); return; }
+  navigator.clipboard.writeText(buildMsg()).then(()=>toast('📋 Copiado al portapapeles'));
+}
+
+function sendWA(){
+  if(!items.length){ toast('⚠️ Sin servicios en el presupuesto'); return; }
+  const tel = document.getElementById('telefono').value.replace(/\D/g,'');
+  const msg = encodeURIComponent(buildMsg());
+  const url = tel ? `https://wa.me/52${tel}?text=${msg}` : `https://wa.me/?text=${msg}`;
+  window.open(url,'_blank');
+}
+
+function clearAll(){
+  if(!confirm('¿Limpiar todo el presupuesto?')) return;
+  items=[];
+  selectedSvc=null;
+  document.getElementById('cliente').value='';
+  document.getElementById('telefono').value='';
+  document.getElementById('auto').value='';
+  document.getElementById('os').value='';
+  document.getElementById('svc-search').value='';
+  document.getElementById('svc-price').value='';
+  document.getElementById('asesor').value='';
+  render();
+  toast('🗑 Presupuesto limpiado');
+}
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+</script>
+</body>
+</html>
