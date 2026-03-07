@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pitch · Grimaldi Digital</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#060A12;
+  --yellow:#F5C518;
+  --white:#FFFFFF;
+  --gray:#7A8AA0;
+  --card:#0F1724;
+  --border:#1E2D45;
+  --green:#0ECF82;
+  --blue:#3B7BF5;
+  --red:#FF4D4D;
+}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--white)}
+
+/* ── SLIDES CONTAINER ─────────────────────────────── */
+.deck{width:100%;height:100%;position:relative}
+.slide{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  padding:clamp(20px,5vw,60px);
+  opacity:0;pointer-events:none;transition:opacity .5s, transform .5s;
+  transform:translateX(60px);
+}
+.slide.active{opacity:1;pointer-events:all;transform:translateX(0)}
+.slide.prev{opacity:0;transform:translateX(-60px)}
+
+/* ── PROGRESS BAR ─────────────────────────────────── */
+.progress{
+  position:fixed;top:0;left:0;height:3px;
+  background:var(--yellow);transition:width .4s ease;z-index:100
+}
+.slide-counter{
+  position:fixed;bottom:20px;right:20px;
+  font-size:.7rem;color:var(--gray);letter-spacing:.1em;
+  font-family:'Syne',sans-serif;z-index:100
+}
+
+/* ── NAV ARROWS ───────────────────────────────────── */
+.nav-prev,.nav-next{
+  position:fixed;bottom:12px;z-index:100;
+  background:var(--card);border:1px solid var(--border);
+  color:var(--gray);font-size:1.1rem;width:44px;height:44px;
+  border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .2s;user-select:none;
+}
+.nav-prev{left:20px}.nav-next{left:72px}
+.nav-prev:active,.nav-next:active{background:var(--yellow);color:#000;border-color:var(--yellow)}
+
+/* ── TYPOGRAPHY ───────────────────────────────────── */
+.display{font-family:'Syne',sans-serif;font-weight:800;line-height:1.05;letter-spacing:-.02em}
+.label{font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gray);font-family:'Syne',sans-serif}
+.accent{color:var(--yellow)}
+.muted{color:var(--gray)}
+
+/* ── CARDS ────────────────────────────────────────── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px}
+.card-grid{display:grid;gap:12px;width:100%;max-width:700px}
+.card-grid.cols2{grid-template-columns:1fr 1fr}
+.card-grid.cols3{grid-template-columns:1fr 1fr 1fr}
+
+/* ── ANIMATIONS ───────────────────────────────────── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(245,197,24,.3)}50%{box-shadow:0 0 20px 6px rgba(245,197,24,.2)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes scanline{0%{top:-10%}100%{top:110%}}
+
+.slide.active .ani-1{animation:fadeUp .5s .05s both}
+.slide.active .ani-2{animation:fadeUp .5s .15s both}
+.slide.active .ani-3{animation:fadeUp .5s .25s both}
+.slide.active .ani-4{animation:fadeUp .5s .35s both}
+.slide.active .ani-5{animation:fadeUp .5s .45s both}
+.slide.active .ani-6{animation:fadeUp .5s .55s both}
+
+/* ── BIG NUMBER STAT ──────────────────────────────── */
+.stat-block{text-align:center}
+.stat-num{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(2.5rem,8vw,5rem);color:var(--yellow);line-height:1}
+.stat-label{font-size:.8rem;color:var(--gray);margin-top:4px;font-weight:300}
+
+/* ── STEP PILL ────────────────────────────────────── */
+.step-pill{
+  display:flex;align-items:flex-start;gap:14px;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:14px 16px;
+}
+.step-num{
+  min-width:32px;height:32px;border-radius:50%;
+  background:var(--yellow);color:#000;
+  font-family:'Syne',sans-serif;font-weight:800;font-size:.9rem;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;
+}
+.step-body h4{font-size:.95rem;font-weight:500;margin-bottom:3px}
+.step-body p{font-size:.82rem;color:var(--gray);line-height:1.45}
+
+/* ── INTERACTIVE QUESTION ─────────────────────────── */
+.q-box{
+  background:linear-gradient(135deg,#0F1E30,#0A1520);
+  border:1.5px solid var(--yellow);border-radius:16px;
+  padding:22px 24px;width:100%;max-width:650px;
+  animation:glow 3s infinite;
+}
+.q-emoji{font-size:2rem;margin-bottom:10px;display:block;animation:float 3s ease-in-out infinite}
+.q-text{font-size:clamp(1rem,3vw,1.3rem);font-weight:500;line-height:1.5;margin-bottom:16px}
+.q-opts{display:flex;gap:10px;flex-wrap:wrap}
+.q-btn{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:8px;padding:9px 16px;font-size:.85rem;
+  font-family:'DM Sans',sans-serif;color:var(--white);cursor:pointer;
+  transition:all .2s;
+}
+.q-btn:hover,.q-btn.selected{background:var(--yellow);color:#000;border-color:var(--yellow);font-weight:500}
+
+/* ── PHONE MOCKUP ─────────────────────────────────── */
+.phone{
+  width:min(180px,38vw);border-radius:30px;
+  background:#111;border:2px solid #2A3550;overflow:hidden;
+  box-shadow:0 20px 60px rgba(0,0,0,.5);flex-shrink:0;
+}
+.phone-screen{background:#0D1B2A;padding:12px}
+.phone-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.phone-name{font-size:.55rem;font-weight:600;color:var(--white)}
+.phone-badge{background:var(--yellow);color:#000;font-size:.42rem;font-weight:700;padding:2px 5px;border-radius:3px}
+.phone-bar{height:5px;background:#1E2D45;border-radius:3px;margin-bottom:5px;overflow:hidden}
+.phone-bar-fill{height:100%;background:var(--yellow);border-radius:3px}
+.phone-card{background:#161F33;border-radius:6px;padding:7px 8px;margin-bottom:5px}
+.phone-card .pc-label{font-size:.42rem;color:var(--gray);margin-bottom:2px}
+.phone-card .pc-val{font-size:.58rem;font-weight:600;color:var(--white)}
+.phone-wa{display:flex;align-items:center;gap:6px;background:#075E54;border-radius:6px;padding:6px 8px;margin-top:6px}
+.phone-wa span{font-size:.45rem;color:var(--white);line-height:1.3}
+.wa-dot{width:6px;height:6px;border-radius:50%;background:#25D366;flex-shrink:0}
+
+/* ── BENEFIT ROW ──────────────────────────────────── */
+.benefit-row{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:14px 16px;background:var(--card);
+  border:1px solid var(--border);border-radius:12px;
+}
+.ben-icon{font-size:1.6rem;flex-shrink:0;margin-top:2px}
+.ben-body h4{font-size:.95rem;font-weight:500;margin-bottom:3px}
+.ben-body p{font-size:.82rem;color:var(--gray);line-height:1.45}
+
+/* ── PRICE CARDS ──────────────────────────────────── */
+.price-card{border-radius:14px;overflow:hidden;text-align:center}
+.price-card .pc-head{padding:10px;font-family:'Syne',sans-serif;font-weight:800;font-size:.85rem;letter-spacing:.06em}
+.price-card .pc-body{background:var(--card);padding:14px 10px}
+.price-card .pc-num{font-family:'Syne',sans-serif;font-weight:800;font-size:2rem;line-height:1}
+.price-card .pc-desc{font-size:.73rem;color:var(--gray);margin-top:6px;line-height:1.4}
+
+/* ── PHASE TIMELINE ───────────────────────────────── */
+.phase{border-radius:12px;overflow:hidden}
+.phase-head{padding:10px 14px;font-family:'Syne',sans-serif;font-weight:700;font-size:.8rem;letter-spacing:.08em}
+.phase-body{background:var(--card);border:1px solid var(--border);border-top:none;border-radius:0 0 12px 12px;padding:12px 14px}
+.phase-item{display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:.8rem;color:#C0CCE0}
+.phase-item:last-child{margin-bottom:0}
+.phase-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* ── CLOSING SLIDE ────────────────────────────────── */
+.closing-box{
+  border:2px solid var(--yellow);border-radius:20px;padding:28px;
+  width:100%;max-width:580px;text-align:center;
+  background:linear-gradient(135deg,rgba(245,197,24,.07),rgba(245,197,24,.02));
+  animation:glow 3s infinite;
+}
+
+/* ── SCANLINE EFFECT ──────────────────────────────── */
+.scanline{
+  position:absolute;left:0;width:100%;height:40px;
+  background:linear-gradient(transparent,rgba(245,197,24,.03),transparent);
+  animation:scanline 5s linear infinite;pointer-events:none;
+}
+
+/* ── CHECKLIST ────────────────────────────────────── */
+.check-item{display:flex;align-items:center;gap:10px;padding:10px 14px;
+  background:var(--card);border:1px solid var(--border);border-radius:10px;font-size:.85rem}
+.check-icon{font-size:1rem;flex-shrink:0}
+
+/* ── PRODUCT BADGE ────────────────────────────────── */
+.product-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(245,197,24,.12);border:1px solid rgba(245,197,24,.3);
+  border-radius:20px;padding:5px 14px;font-size:.7rem;font-weight:500;
+  color:var(--yellow);letter-spacing:.06em;margin-bottom:14px;
+}
+
+/* ── SCROLL CONTAINER for taller content ─────────── */
+.slide-inner{width:100%;max-width:720px;overflow-y:auto;max-height:100%;padding-bottom:60px}
+
+/* ── RESPONSIVE ────────────────────────────────────── */
+@media(max-width:520px){
+  .card-grid.cols3{grid-template-columns:1fr 1fr}
+  .card-grid.cols2{grid-template-columns:1fr}
+  .price-card .pc-num{font-size:1.6rem}
+}
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<div class="slide-counter" id="counter">1 / 12</div>
+<button class="nav-prev" onclick="prev()">←</button>
+<button class="nav-next" onclick="next()">→</button>
+
+<div class="deck" id="deck">
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 1 · PORTADA -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="slide active" id="s1">
+  <div class="scanline"></div>
+  <div style="text-align:center;width:100%;max-width:620px">
+    <div class="label ani-1" style="margin-bottom:18px">Michelin · Grimaldi Car Service · 2025</div>
+    <div class="display ani-2" style="font-size:clamp(2.4rem,9vw,5.5rem);margin-bottom:16px">
+      Tu negocio,<br><span class="accent">en el siglo XXI.</span>
+    </div>
+    <p class="ani-3" style="font-size:clamp(.95rem,2.5vw,1.15rem);color:var(--gray);max-width:480px;margin:0 auto 32px;font-weight:300;line-height:1.6">
+      Cómo digitalizamos Grimaldi y qué significa eso para tu tiempo, tu dinero y tus clientes.
+    </p>
+    <div class="card-grid cols3 ani-4" style="max-width:480px;margin:0 auto">
+      <div class="card" style="text-align:center">
+        <div class="stat-num">531<span style="font-size:1.5rem">+</span></div>
+        <div class="stat-label">Clientes listos</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <div class="stat-num">463</div>
+        <div class="stat-label">Servicios en catálogo</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <div class="stat-num">5<span style="font-size:1.5rem">min</span></div>
+        <div class="stat-label">Para cotizar</div>
+      </div>
+    </div>
+    <p class="ani-5" style="font-size:.75rem;color:var(--border);margin-top:28px">Toca → para empezar</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 2 · EL PROBLEMA (interactivo) -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="slide" id="s2">
+  <div style="width:100%;max-width:640px">
+    <div class="label ani-1" style="margin-bottom:12px">Antes de empezar...</div>
+    <div class="display ani-2" style="font-size:clamp(1.8rem,6vw,3rem);margin-bottom:24px">
+      Una pregunta rápida 👋
+    </div>
+
+    <div class="q-box ani-3">
+      <span class="q-emoji">🤔</span>
+      <p class="q-text">¿Cuánto tiempo tardas en encontrar el teléfono de un cliente que vino hace 3 meses?</p>
+      <div class="q-opts">
+        <button class="q-btn" onclick="selectQ(this,'pain')">😅 Más de 5 minutos</button>
+        <button class="q-btn" onclick="selectQ(this,'ok')">⚡ Al instante</button>
+        <button class="q-btn" onclick="selectQ(this,'pain')">📋 Depende del día</button>
+      </div>
+    </div>
+
+    <div id="q-response" style="display:none;margin-top:16px" class="ani-4">
+      <div class="q-box" style="animation:none;border-color:var(--green)">
+        <p class="q-text" id="q-resp-text"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 3 · LOS DOLORES -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="slide" id="s3">
+  <div class="slide-inner">
+    <div class="label ani-1" style="margin-bottom:10px">El problema que nadie quiere admitir</div>
+    <div class="display ani-2" style="font-size:clamp(1.6rem,5.5vw,2.8rem);margin-bottom:22px">
+      ¿Te suena<br><span class="accent">familiar?</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;max-width:640px">
+      <div class="benefit-row ani-3">
+        <span class="ben-icon">📋</span>
+        <div class="ben-body">
+          <h4>Los clientes están en Excel… o en papel</h4>
+          <p>Buscas a alguien y tardas 5 minutos dando vueltas entre archivos.</p>
+        </div>
+      </div>
+      <div class="benefit-row ani-4">
+        <span class="ben-icon">📱</span>
+        <div class="ben-body">
+          <h4>Los mensajes de WhatsApp los escribes a mano</h4>
+          <p>Cada recordatorio es un copy-paste. Si te equivocas el nombre, ya la regaste.</p>
+        </div>
+      </div>
+      <div class="benefit-row ani-5">
+        <span class="ben-icon">💸</span>
+        <div class="ben-body">
+          <h4>Cotizar tarda demasiado</h4>
+          <p>El cliente pregunta cuánto cuesta y tú andas buscando en 3 listas distintas.</p>
+        </div>
+      </div>
+      <div class="benefit-row ani-6">
+        <span class="ben-icon">💤</span>
+        <div class="ben-body">
+          <h4>El dinero del monedero está dormido</h4>
+          <p>Clientes con saldo que no regresan porque nadie los ha contactado.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 4 · QUE ES EL CRM -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="slide" id="s4">
+  <div style="width:100%;max-width:680px">
+    <div class="product-badge ani-1">⚡ Producto 1 de 2</div>
+    <div class="display ani-2" style="font-size:clamp(1.8rem,6vw,3.2rem);margin-bottom:12px">
+      El CRM: <span class="accent">tu nuevo<br>cerebro de ventas</span>
+    </div>
+    <p class="ani-3" style="color:var(--gray);font-size:clamp(.9rem,2.5vw,1.05rem);margin-bottom:24px;font-weight:300;line-height:1.6">
+      Imagínate tener a todos tus clientes, sus carros, su historial completo y su saldo del monedero... en tu teléfono, en 3 segundos.
+    </p>
+
+    <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px">
+        <div class="card-grid" style="gap:10px" >
+          <div class="step-pill ani-4">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <h4>Buscas al cliente</h4>
+              <p>Por nombre, placa, teléfono. Aparece al instante.</p>
+            </div>
+          </div>
+          <div class="step-pill ani-5">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <h4>Ves su historial</h4>
+              <p>Todo lo que le has hecho: fecha, piezas, costo. Nada se pierde.</p>
+            </div>
+          </div>
+          <div class="step-pill ani-6">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <h4>Le mandas WA en 1 toque</h4>
+              <p>El texto ya está escrito. Solo tocas Enviar.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone ani-4" style="animation-delay:.3s">
+        <div style="background:#1A2A3A;height:16px;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:center">
+          <div style="width:40px;height:4px;background:#2A3A4A;border-radius:2px"></div>
+        </div>
+        <div class="phone-screen">
+          <div class="phone-row">
+            <span class="phone-name">MICHELIN CRM</span>
+            <span class="phone-badge">LIVE</span>
+          </div>
+          <div class="phone-bar"><div class="phone-bar-fill" style="width:75%"></div></div>
+          <div class="phone-card">
+            <div class="pc-label">Cliente encontrado</div>
+            <div class="pc-val">HONDA ODYSSEY · 2013</div>
+          </div>
+          <div class="phone-card">
+            <div class="pc-label">Último servicio</div>
+            <div class="pc-val">Alineación · Ene 2025</div>
+          </div>
+          <div class="phone-card">
+            <div class="pc-label">Monedero</div>
+            <div class="pc-val" style="color:#F5C518">$320.00 disponible</div>
+          </div>
+          <div class="phone-wa">
+            <div class="wa-dot"></div>
+            <span>Recordatorio listo ✓<br>Toca para enviar</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 5 · BENEFICIOS CRM -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="slide" id="s5">
+  <div class="slide-inner">
+    <div class="label ani-1" style="margin-bottom:10px">¿Qué ganas tú con esto?</div>
+    <div class="display ani-2" style="font-size:clamp(1.7rem,5.5vw,2.8rem);margin-bottom:22px">
+      Beneficios<br><span class="accent">en lenguaje real</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;max-width:640px">
+      <div class="benefit-row ani-3">
+        <span class="ben-icon">⏱️</span>
+        <div class="ben-body">
+          <h4>Recuperas horas a la semana</h4>
+          <p>Lo que antes tardaba 15 minutos ahora son 90 segundos. Multiplícalo por los recordatorios del mes.</p>
+        </div>
+      </div>
+      <div class="benefit-row ani-4">
+        <span class="ben-icon">💰</span>
+        <div class="ben-body">
+          <h4>Activas dinero dormido</h4>
+          <p>El monedero de tus clientes está ahí. Solo necesitas un mensaje en el momento correcto.</p>
+        </div>
+      </div>
+      <div class="benefit-row ani-5">
+        <span class="ben-icon">🔁</span>
+        <div class="ben-body">
+          <h4>Más clientes regresan</h4>
+          <p>El 68% de los clientes no regresan porque nadie los contactó. Este sistema lo hace por ti.</p>
+        </div>
+      </div>
+      <div class="benefit-row ani-6">
+        <span class="ben-icon">📊</span>
+        <div class="ben-body">
+          <h4>Tomas mejores decisiones</h4>
+          <p>¿Qué sucursal vende más? ¿Qué servicio se pide más? Ahora lo puedes ver de un vistazo.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 6 · PREGUNTA INTERACTIVA 2 -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="slide" id="s6">
+  <div style="width:100%;max-width:640px">
+    <div class="label ani-1" style="margin-bottom:12px">Pero espera...</div>
+    <div class="display ani-2" style="font-size:clamp(1.8rem,6vw,3rem);margin-bottom:24px">
+      Una pregunta más 🙋
+    </div>
+
+    <div class="q-box ani-3">
+      <span class="q-emoji">🔧</span>
+      <p class="q-text">Cuando un cliente te pregunta cuánto cuesta cambiar los frenos más la flecha más los baleros... ¿qué pasa?</p>
+      <div class="q-opts">
+        <button class="q-btn" onclick="selectQ2(this,'slow')">😓 Busco en varias listas</button>
+        <button class="q-btn" onclick="selectQ2(this,'fast')">📲 Lo sé de memoria</button>
+        <button class="q-btn" onclick="selectQ2(this,'slow')">📞 Le llamo y le digo después</button>
+      </div>
+    </div>
+
+    <div id="q2-response" style="display:none;margin-top:16px" class="ani-4">
+      <div class="q-box" style="animation:none;border-color:var(--green)">
+        <p class="q-text" id="q2-resp-text"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 7 · COTIZADOR TRANSICION -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="slide" id="s7">
+  <div style="text-align:center;width:100%;max-width:600px">
+    <div class="product-badge ani-1">🔧 Producto 2 de 2</div>
+    <div class="display ani-2" style="font-size:clamp(2rem,7vw,4rem);margin-bottom:16px">
+      El Cotizador<br>de <span class="accent">Refacciones</span>
+    </div>
+    <p class="ani-3" style="color:var(--gray);font-size:clamp(.95rem,2.5vw,1.1rem);margin-bottom:32px;font-weight:300;line-height:1.6">
+      El presupuesto que antes tardabas 10 minutos en armar... listo en menos de un minuto, y enviado directo al WhatsApp del cliente.
+    </p>
+
+    <div class="card-grid cols3 ani-4" style="max-width:500px;margin:0 auto">
+      <div class="card" style="text-align:center">
+        <div class="stat-num">191</div>
+        <div class="stat-label">Servicios exactos<br>de la lista 2025</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <div class="stat-num">3</div>
+        <div class="stat-label">Niveles de precio<br>por servicio</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <div class="stat-num">7</div>
+        <div class="stat-label">Asesores<br>registrados</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 8 · COMO FUNCIONA EL COTIZADOR -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="slide" id="s8">
+  <div class="slide-inner">
+    <div class="label ani-1" style="margin-bottom:10px">Así de fácil funciona</div>
+    <div class="display ani-2" style="font-size:clamp(1.6rem,5.5vw,2.6rem);margin-bottom:22px">
+      Del cliente al<br><span class="accent">WhatsApp en 5 pasos</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:9px;max-width:640px">
+      <div class="step-pill ani-3">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h4>Elige el tipo de cliente</h4>
+          <p>¿Flotilla, Público o Premium? Un toque y todos los precios cambian solos.</p>
+        </div>
+      </div>
+      <div class="step-pill ani-4">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h4>Busca el servicio</h4>
+          <p>Escribe "balero", "freno" o "BM". Aparece con su precio en el tipo que elegiste.</p>
+        </div>
+      </div>
+      <div class="step-pill ani-5">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h4>Define los detalles</h4>
+          <p>Proveedor (AutoZone, Framex...), disponibilidad y urgencia. Todo en la misma pantalla.</p>
+        </div>
+      </div>
+      <div class="step-pill ani-5">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h4>El presupuesto se arma solo</h4>
+          <p>Nombre del cliente, auto, asesor, desglose por pieza y total. Profesional.</p>
+        </div>
+      </div>
+      <div class="step-pill ani-6">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <h4>Lo mandas por WhatsApp</h4>
+          <p>Un toque. El cliente recibe el desglose completo formateado. Impresiona.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 9 · LOS 3 PRECIOS -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="slide" id="s9">
+  <div style="width:100%;max-width:660px">
+    <div class="label ani-1" style="margin-bottom:10px">Tres precios. Un solo sistema.</div>
+    <div class="display ani-2" style="font-size:clamp(1.6rem,5.5vw,2.8rem);margin-bottom:8px">
+      Seleccionas el tipo<br>de cliente y <span class="accent">listo.</span>
+    </div>
+    <p class="ani-3" style="color:var(--gray);font-size:.9rem;margin-bottom:22px;font-weight:300">
+      Sin calculadora. Sin buscar en papeles. El sistema ajusta todo automáticamente.
+    </p>
+
+    <div class="card-grid cols3 ani-4" style="margin-bottom:20px">
+      <div class="price-card">
+        <div class="pc-head" style="background:#1D4ED8">FLOTILLA</div>
+        <div class="pc-body" style="border:1px solid #1D4ED8;border-top:none;border-radius:0 0 14px 14px">
+          <div class="pc-num" style="color:#3B82F6">$720</div>
+          <div class="pc-desc">Para clientes con cuenta corporativa o acuerdo de flotilla</div>
+        </div>
+      </div>
+      <div class="price-card">
+        <div class="pc-head" style="background:#065F46">PÚBLICO</div>
+        <div class="pc-body" style="border:1px solid #065F46;border-top:none;border-radius:0 0 14px 14px">
+          <div class="pc-num" style="color:#10B981">$800</div>
+          <div class="pc-desc">Precio estándar de mostrador para clientes particulares</div>
+        </div>
+      </div>
+      <div class="price-card">
+        <div class="pc-head" style="background:#92400E">PREMIUM</div>
+        <div class="pc-body" style="border:1px solid #92400E;border-top:none;border-radius:0 0 14px 14px">
+          <div class="pc-num" style="color:#F59E0B">$950</div>
+          <div class="pc-desc">Vehículos especializados o clientes VIP</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="ani-5" style="font-size:.78rem;color:var(--gray);text-align:center;font-style:italic">
+      Ejemplo con Balero Maza (BM). Los 191 servicios tienen sus 3 precios exactos de la Lista 2025.
+    </p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 10 · HACIA DONDE ESCALA -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="slide" id="s10">
+  <div class="slide-inner">
+    <div class="label ani-1" style="margin-bottom:10px">¿Y esto hasta dónde puede llegar?</div>
+    <div class="display ani-2" style="font-size:clamp(1.6rem,5.5vw,2.6rem);margin-bottom:22px">
+      El camino<br><span class="accent">que ya empezaste</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;max-width:640px">
+      <div class="phase ani-3">
+        <div class="phase-head" style="background:var(--green);color:#000">✅ FASE 1 · HOY · Ya entregado</div>
+        <div class="phase-body">
+          <div class="phase-item"><div class="phase-dot" style="background:var(--green)"></div>CRM con 531+ clientes importados</div>
+          <div class="phase-item"><div class="phase-dot" style="background:var(--green)"></div>Historial completo de servicios</div>
+          <div class="phase-item"><div class="phase-dot" style="background:var(--green)"></div>WhatsApp automático con 5 plantillas</div>
+          <div class="phase-item"><div class="phase-dot" style="background:var(--green)"></div>Cotizador de refacciones con 191 servicios</div>
+          <div class="phase-item"><div class="phase-dot" style="background:var(--green)"></div>App instalable en celular, sin costo mensual</div>
+        </div>
+      </div>
+
+      <div class="phase ani-4">
+        <div class="phase-head" style="background:var(--yellow);color:#000">🚀 FASE 2 · Próximos meses</div>
+        <div class="phase-body">
+          <div class="phase-item"><div class="phase-dot" style="background:var(--yellow)"></div>Alertas automáticas por fecha de servicio</div>
+          <div class="phase-item"><div class="phase-dot" style="background:var(--yellow)"></div>Agenda de citas integrada</div>
+          <div class="phase-item"><div class="phase-dot" style="background:var(--yellow)"></div>Dashboard por sucursal en tiempo real</div>
+          <div class="phase-item"><div class="phase-dot" style="background:var(--yellow)"></div>Múltiples usuarios con roles distintos</div>
+        </div>
+      </div>
+
+      <div class="phase ani-5">
+        <div class="phase-head" style="background:var(--blue);color:#fff">🌐 FASE 3 · La visión completa</div>
+        <div class="phase-body">
+          <div class="phase-item"><div class="phase-dot" style="background:var(--blue)"></div>Nube: acceso desde cualquier sucursal</div>
+          <div class="phase-item"><div class="phase-dot" style="background:var(--blue)"></div>Reportes ejecutivos automáticos</div>
+          <div class="phase-item"><div class="phase-dot" style="background:var(--blue)"></div>Integración con facturación y pagos</div>
+          <div class="phase-item"><div class="phase-dot" style="background:var(--blue)"></div>Escalable a cualquier tipo de negocio</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 11 · CUALQUIER NEGOCIO -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="slide" id="s11">
+  <div class="slide-inner">
+    <div class="label ani-1" style="margin-bottom:10px">Esto no es solo para llanterías</div>
+    <div class="display ani-2" style="font-size:clamp(1.6rem,5.5vw,2.6rem);margin-bottom:14px">
+      Cualquier negocio<br>que tenga <span class="accent">clientes</span><br>puede usarlo.
+    </div>
+
+    <div class="card-grid cols3 ani-3" style="max-width:660px;margin-bottom:18px">
+      <div class="card" style="text-align:center;padding:16px 10px">
+        <div style="font-size:1.8rem;margin-bottom:6px">🔧</div>
+        <div style="font-size:.85rem;font-weight:500;margin-bottom:4px">Taller Mecánico</div>
+        <div style="font-size:.75rem;color:var(--gray)">Historial por vehículo y recordatorios</div>
+      </div>
+      <div class="card" style="text-align:center;padding:16px 10px">
+        <div style="font-size:1.8rem;margin-bottom:6px">💇</div>
+        <div style="font-size:.85rem;font-weight:500;margin-bottom:4px">Salón de Belleza</div>
+        <div style="font-size:.75rem;color:var(--gray)">Clientes frecuentes y promociones</div>
+      </div>
+      <div class="card" style="text-align:center;padding:16px 10px">
+        <div style="font-size:1.8rem;margin-bottom:6px">🏥</div>
+        <div style="font-size:.85rem;font-weight:500;margin-bottom:4px">Consultorio</div>
+        <div style="font-size:.75rem;color:var(--gray)">Pacientes y recordatorio de citas</div>
+      </div>
+      <div class="card" style="text-align:center;padding:16px 10px">
+        <div style="font-size:1.8rem;margin-bottom:6px">🏪</div>
+        <div style="font-size:.85rem;font-weight:500;margin-bottom:4px">Tienda / Refacción</div>
+        <div style="font-size:.75rem;color:var(--gray)">Cotizaciones y catálogo digital</div>
+      </div>
+      <div class="card" style="text-align:center;padding:16px 10px">
+        <div style="font-size:1.8rem;margin-bottom:6px">🍕</div>
+        <div style="font-size:.85rem;font-weight:500;margin-bottom:4px">Restaurante</div>
+        <div style="font-size:.75rem;color:var(--gray)">Clientes VIP y pedidos frecuentes</div>
+      </div>
+      <div class="card" style="text-align:center;padding:16px 10px">
+        <div style="font-size:1.8rem;margin-bottom:6px">🏗️</div>
+        <div style="font-size:.85rem;font-weight:500;margin-bottom:4px">Constructora</div>
+        <div style="font-size:.75rem;color:var(--gray)">Presupuestos y seguimiento de clientes</div>
+      </div>
+    </div>
+
+    <p class="ani-4" style="font-size:.85rem;color:var(--gray);text-align:center;font-style:italic;max-width:500px;margin:0 auto">
+      La tecnología no es para los grandes. Es para quien quiera crecer.
+    </p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 12 · CIERRE -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="slide" id="s12">
+  <div style="width:100%;max-width:600px;text-align:center">
+    <div class="display ani-1" style="font-size:clamp(1.6rem,5vw,2.6rem);margin-bottom:8px">
+      La pregunta no es<br><span class="accent">¿puedo permitirme<br>digitalizarme?</span>
+    </div>
+    <p class="ani-2" style="color:var(--gray);font-size:1rem;margin-bottom:28px;font-style:italic">
+      La pregunta real es: ¿cuánto me está costando NO hacerlo?
+    </p>
+
+    <div class="closing-box ani-3">
+      <div class="label" style="margin-bottom:14px">Lo que llevas hoy</div>
+      <div style="display:flex;flex-direction:column;gap:7px;text-align:left">
+        <div class="check-item"><span class="check-icon">✅</span> Sistema CRM operando con 531+ clientes</div>
+        <div class="check-item"><span class="check-icon">✅</span> Historial de servicios importado</div>
+        <div class="check-item"><span class="check-icon">✅</span> WhatsApp automático con 5 plantillas</div>
+        <div class="check-item"><span class="check-icon">✅</span> Cotizador de refacciones — 191 servicios</div>
+        <div class="check-item"><span class="check-icon">✅</span> Tres niveles de precio por servicio</div>
+        <div class="check-item"><span class="check-icon">✅</span> Manual de usuario completo</div>
+        <div class="check-item"><span class="check-icon">✅</span> App instalable, sin mensualidades</div>
+      </div>
+    </div>
+
+    <p class="ani-4" style="margin-top:22px;font-size:.82rem;color:var(--gray)">
+      Todo esto. Un solo pago. Tu negocio, en el siglo XXI. 🚀
+    </p>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<script>
+const TOTAL = 12;
+let current = 1;
+
+function goTo(n) {
+  const prev = document.getElementById('s' + current);
+  if (prev) { prev.classList.remove('active'); prev.classList.add('prev'); }
+  setTimeout(() => { if (prev) prev.classList.remove('prev'); }, 520);
+  current = Math.max(1, Math.min(TOTAL, n));
+  const next = document.getElementById('s' + current);
+  if (next) next.classList.add('active');
+  document.getElementById('progress').style.width = (current / TOTAL * 100) + '%';
+  document.getElementById('counter').textContent = current + ' / ' + TOTAL;
+}
+
+function next() { if (current < TOTAL) goTo(current + 1); }
+function prev() { if (current > 1) goTo(current - 1); }
+
+// Swipe
+let tx = 0;
+document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive: true });
+document.addEventListener('touchend', e => {
+  const dx = tx - e.changedTouches[0].clientX;
+  if (Math.abs(dx) > 50) { dx > 0 ? next() : prev(); }
+}, { passive: true });
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') next();
+  if (e.key === 'ArrowLeft') prev();
+});
+
+// Interactive Q1
+function selectQ(btn, type) {
+  document.querySelectorAll('#s2 .q-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  const box = document.getElementById('q-response');
+  const txt = document.getElementById('q-resp-text');
+  if (type === 'pain') {
+    txt.textContent = '👉 Exactamente el problema que resuelve el CRM. Con el nuevo sistema, lo encuentras en 3 segundos. En serio.';
+  } else {
+    txt.textContent = '💪 ¡Excelente! Y con el CRM, además de encontrarlo rápido, ya tienes listo el mensaje de WhatsApp para mandarle.';
+  }
+  box.style.display = 'block';
+  box.style.animation = 'fadeUp .4s both';
+}
+
+// Interactive Q2
+function selectQ2(btn, type) {
+  document.querySelectorAll('#s6 .q-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  const box = document.getElementById('q2-response');
+  const txt = document.getElementById('q2-resp-text');
+  if (type === 'slow') {
+    txt.textContent = '🎯 Ahí está la oportunidad. El cotizador de refacciones lo resuelve: buscas el servicio, eliges el tipo de cliente, y el presupuesto se genera solo. Listo para enviar por WhatsApp.';
+  } else {
+    txt.textContent = '🧠 Si lo sabes de memoria, imagínate cuánto más rápido sería tener el desglose completo y profesional listo para enviarlo directamente. Eso hace el cotizador.';
+  }
+  box.style.display = 'block';
+}
+
+// Init progress
+document.getElementById('progress').style.width = (1 / TOTAL * 100) + '%';
+</script>
+</body>
+</html>
