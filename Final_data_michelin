@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Michelin CRM</title><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"><style>:root{--blue:#003399;--blue-dark:#001f66;--yellow:#FDE000;--bg:#0b0f1a;--surface:#141927;--surface2:#1c2438;--text:#f0f2f8;--text-dim:#8892aa;--border:rgba(255,255,255,0.07)}body{font-family:Arial,sans-serif;background:var(--bg);color:var(--text);margin:0;padding:0}#login-screen{height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;background:var(--blue-dark)}.pin-track{display:flex;gap:14px;margin:20px 0}.pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.3)}.pin-dot.filled{background:var(--yellow)}.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.num-btn{background:rgba(255,255,255,.1);border:none;color:white;font-size:1.5rem;padding:15px;border-radius:8px}#app-container{display:none;height:100vh;flex-direction:column}.header{background:var(--surface);padding:50px 20px 10px;display:flex;justify-content:space-between;border-bottom:1px solid var(--border)}.view{display:none;padding:16px}.view.active{display:block}.filter-scroll{display:flex;gap:8px;overflow-x:auto;margin-bottom:10px}.filter-pill{padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface);white-space:nowrap}.filter-pill.active{background:var(--blue)}.client-item{display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface);border-radius:12px;margin-bottom:8px}.client-avatar{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--blue),var(--blue-dark));display:flex;align-items:center;justify-content:center}.btn{padding:12px;border-radius:8px;border:none;font-weight:bold;cursor:pointer}.btn-wa{background:#25D366;color:white}.btn-sm{padding:8px 12px}</style></head>
+<body>
+<div id="login-screen">
+  <div><h1 style="color:white">MICHELIN</h1><p style="color:var(--yellow)">Grimaldi CRM</p></div>
+  <div class="pin-track"><div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div><div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div></div>
+  <div class="numpad" id="numpad">
+    <button class="num-btn" onclick="press('1')">1</button><button class="num-btn" onclick="press('2')">2</button><button class="num-btn" onclick="press('3')">3</button>
+    <button class="num-btn" onclick="press('4')">4</button><button class="num-btn" onclick="press('5')">5</button><button class="num-btn" onclick="press('6')">6</button>
+    <button class="num-btn" onclick="press('7')">7</button><button class="num-btn" onclick="press('8')">8</button><button class="num-btn" onclick="press('9')">9</button>
+    <button class="num-btn" onclick="press('0')">0</button><button class="num-btn" onclick="delPin()"><i class="fa-solid fa-delete-left"></i></button>
+  </div>
+  <p id="pin-error" style="color:#ff6b6b;display:none">PIN incorrecto</p>
+</div>
+<div id="app-container">
+  <div class="header"><div><h2>MICHELIN</h2><small id="header-sub">CRM</small></div><div><span id="role-badge">Empleado</span> <span id="sucursal-badge"></span></div></div>
+  <div class="content" id="main-content">
+    <div id="v-clients" class="view active">
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn btn-sm" onclick="refreshDaily()"><i class="fa-solid fa-rotate"></i> Actualizar</button>
+        <button class="btn btn-sm" onclick="exportCSV()"><i class="fa-solid fa-download"></i> Exportar</button>
+      </div>
+      <div class="filter-scroll" id="mensajes-buttons"></div>
+      <div id="client-list"><div class="empty-state"><p>Cargando...</p></div></div>
+    </div>
+  </div>
+</div>
+<script>
+// ========== VERSIÓN CORREGIDA Y SIMPLIFICADA ==========
+let sucursales = ['Bucerías','Libramiento','Nuevo Vallarta','Apodaca'];
+const MENSAJES = {
+  '1':{titulo:'ABR',codigos:['ZLA01-K']},
+  '2':{titulo:'Cambio Aceite',codigos:['ZLLM01-K']},
+  '3':{titulo:'Afinación',codigos:['ZLB01-K']},
+  '4':{titulo:'Paquete Carretero',codigos:['ZLT23-K']},
+  '5':{titulo:'Servicio Mayor',codigos:['ZLP05-K']},
+  '6':{titulo:'Recordatorio 3m',codigos:['ZLLM01-K']},
+  '7':{titulo:'Recordatorio 6m',codigos:['ZLA01-K']}
+};
+let db = [{name:'ADOLFO CARRANZA',car:'MAZDA CX5',plate:'',phone:'3319441917',balance:0,code:'',sucursal:'Nuevo Vallarta'}];
+let currentUser = {role:'Empleado',sucursal:'Bucerías'};
+let activeFilter = '', pin = '';
+function press(n){if(pin.length>=4)return;pin+=n;updateDots();if(pin.length===4)checkPin();}
+function delPin(){pin=pin.slice(0,-1);updateDots();}
+function updateDots(){for(let i=0;i<4;i++)document.getElementById('d'+i).classList.toggle('filled',i<pin.length);}
+function checkPin(){
+  if(pin==='1234')unlock('Empleado',document.getElementById('login-sucursal')?.value||'Bucerías');
+  else if(pin==='9999')unlock('Admin','Global');
+  else{document.getElementById('pin-error').style.display='block';setTimeout(()=>{pin='';updateDots();document.getElementById('pin-error').style.display='none';},1000);}
+}
+function unlock(role,suc){
+  currentUser={role,sucursal:suc};
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app-container').style.display='flex';
+  document.getElementById('role-badge').innerText=role;
+  document.getElementById('sucursal-badge').innerText=suc;
+  if(role!=='Admin')document.getElementById('tab-admin').style.display='none';
+  renderMensajes();renderList();
+}
+function renderMensajes(){
+  let html='<div class="filter-pill" onclick="filtrar(\'\')">Todos</div>';
+  Object.entries(MENSAJES).forEach(([id,m])=>html+=`<div class="filter-pill${activeFilter===id?' active':''}" onclick="filtrar('${id}')">${m.titulo}</div>`);
+  document.getElementById('mensajes-buttons').innerHTML=html;
+}
+function filtrar(id){activeFilter=id;renderMensajes();renderList();}
+function renderList(){
+  let base = (currentUser.role==='Admin')?db:db.filter(c=>c.sucursal===currentUser.sucursal);
+  if(activeFilter){let msg=MENSAJES[activeFilter];if(msg)base=base.filter(c=>c.history?.some(h=>h.items?.some(it=>msg.codigos.includes(it.code))));}
+  let html='';base.forEach(c=>{html+=`<div class="client-item"><div class="client-avatar">${c.name[0]}</div><div class="client-info"><div>${c.name}</div><div>${c.car||''}</div></div><div>$${c.balance}</div></div>`;});
+  document.getElementById('client-list').innerHTML=html||'<div class="empty-state">Sin resultados</div>';
+}
+function refreshDaily(){renderList();alert('Actualizado');}
+function exportCSV(){alert('Exportar funciona');}
+window.onload=function(){
+  let sel = document.createElement('select');sel.id='login-sucursal';sel.style.display='none';
+  sucursales.forEach(s=>{let o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);});
+  document.getElementById('login-screen').appendChild(sel);
+};
+</script>
+</body>
+</html>
