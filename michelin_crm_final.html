@@ -1749,43 +1749,307 @@ function renderAdminStats() {
   document.getElementById('admin-stats-list').innerHTML = rows;
 }
 
+/* ============================================================
+   IMPORTADOR INTELIGENTE — detecta cualquier estructura de archivo
+   ============================================================ */
 function importClients(event) {
   const file = event.target.files[0];
   if (!file) return;
   const targetSuc = document.getElementById('import-sucursal-target').value;
+
   const reader = new FileReader();
   reader.onload = e => {
     try {
       const wb = XLSX.read(e.target.result, { type: 'binary' });
       const sheet = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-      if (rows.length < 2) { toast('⚠️ Archivo vacío'); return; }
-      const headers = rows[0];
-      const idx = (kw) => headers.findIndex(h => (h||'').toString().toLowerCase().includes(kw));
-      const ni=idx('nombre'), pi=idx('tel'), vi=idx('veh'), pli=idx('plac'), bi=idx('saldo'), si=idx('sucursal');
-      if (ni === -1) { toast('⚠️ Columna "Nombre" no encontrada'); return; }
-      let added = 0;
-      for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        if (!row[ni]) continue;
-        const nombre = row[ni].toString().trim().toUpperCase();
-        if (db.some(c => c.name === nombre)) continue;
-        db.push({
-          name: nombre,
-          phone: pi>=0?(row[pi]||'').toString():'',
-          car: vi>=0?(row[vi]||'').toString():'',
-          plate: pli>=0?(row[pli]||'').toString().toUpperCase():'',
-          balance: bi>=0?parseFloat(row[bi])||0:0,
-          sucursal: targetSuc || (si>=0?row[si]:currentUser.sucursal) || currentUser.sucursal,
-        });
-        added++;
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+      if (!rows.length) { toast('⚠️ Archivo vacío'); return; }
+
+      // ── FASE 1: Detectar el tipo de archivo ──────────────────
+      const result = smartParse(rows, targetSuc);
+      if (!result.clients.length) {
+        toast('⚠️ No se encontraron clientes. Formato no reconocido.');
+        return;
       }
-      if (added > 0) { saveDB(); renderStats(); renderList(); toast(`✅ ${added} clientes importados`); }
-      else toast('ℹ️ No se agregaron clientes nuevos (posible duplicado)');
-    } catch(err) { console.error(err); toast('❌ Error al leer el archivo'); }
+
+      // ── FASE 2: Importar sin duplicados ──────────────────────
+      let added = 0, skipped = 0;
+      result.clients.forEach(c => {
+        if (db.some(x => x.name === c.name)) { skipped++; return; }
+        db.push(c);
+        added++;
+      });
+
+      saveDB(); renderStats(); renderList();
+      let msg = `✅ ${added} clientes importados`;
+      if (skipped > 0) msg += ` · ${skipped} ya existían`;
+      msg += ` · Modo: ${result.mode}`;
+      toast(msg);
+      // También mostrar resumen en alert para más detalle
+      setTimeout(() => {
+        if (added > 0) alert(`📊 Importación completada\n\nArchivo: ${file.name}\nFormato detectado: ${result.mode}\nClientes nuevos: ${added}\nOmitidos (duplicados): ${skipped}\nTotal en archivo: ${result.clients.length}`);
+      }, 300);
+
+    } catch(err) {
+      console.error('Import error:', err);
+      toast('❌ Error al leer el archivo: ' + err.message);
+    }
   };
   reader.readAsBinaryString(file);
   event.target.value = '';
+}
+
+/* ── MOTOR DE DETECCIÓN INTELIGENTE ─────────────────────────── */
+function smartParse(rows, targetSuc) {
+
+  // Palabras clave para identificar columnas (en cualquier idioma/variante)
+  const KW = {
+    nombre:   ['nombre','cliente','name','razon','razón','cliente','customer'],
+    telefono: ['tel','phone','cel','movil','móvil','contacto','whatsapp'],
+    vehiculo: ['vehiculo','vehículo','auto','carro','car','modelo','vehicle'],
+    placas:   ['placa','plate','matricula','matrícula','patente'],
+    saldo:    ['saldo','balance','monedero','wallet','credito','crédito'],
+    sucursal: ['sucursal','tienda','store','branch','almacen','almacén','ubicacion'],
+    fecha:    ['fecha','date','emision','emisión'],
+    movid:    ['movid','folio','mov','ticket','orden','order','id'],
+    articulo: ['articulo','artículo','codigo','código','sku','code','clave'],
+    desc:     ['descripcion','descripción','description','servicio','concepto'],
+    importe:  ['importe','total','precio','price','monto','amount','costo'],
+  };
+
+  function matchKW(header, keys) {
+    const h = (header||'').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    return keys.some(kw => h.includes(kw));
+  }
+
+  function findHeaderRow(rows) {
+    // Busca la fila que tenga más coincidencias con palabras clave de encabezados
+    let bestRow = -1, bestScore = 0;
+    for (let i = 0; i < Math.min(rows.length, 25); i++) {
+      const row = rows[i];
+      let score = 0;
+      for (const cell of row) {
+        const s = (cell||'').toString().toLowerCase();
+        if (matchKW(s, KW.nombre)) score += 3;
+        if (matchKW(s, KW.telefono)) score += 2;
+        if (matchKW(s, KW.vehiculo)) score += 2;
+        if (matchKW(s, KW.placas)) score += 2;
+        if (matchKW(s, KW.saldo)) score += 1;
+        if (matchKW(s, KW.articulo)) score += 1;
+        if (matchKW(s, KW.movid)) score += 1;
+      }
+      if (score > bestScore) { bestScore = score; bestRow = i; }
+    }
+    return { row: bestRow, score: bestScore };
+  }
+
+  function mapColumns(headerRow) {
+    const map = {};
+    headerRow.forEach((cell, i) => {
+      for (const [key, kws] of Object.entries(KW)) {
+        if (!map[key] && matchKW(cell, kws)) map[key] = i;
+      }
+    });
+    return map;
+  }
+
+  function cleanPhone(val) {
+    if (!val) return '';
+    const digits = val.toString().replace(/[^0-9]/g, '');
+    // Mexico: 10 digits, or with country code 52
+    if (digits.length === 12 && digits.startsWith('52')) return digits.slice(2);
+    if (digits.length === 10) return digits;
+    if (digits.length >= 8 && digits.length <= 15) return digits;
+    return '';
+  }
+
+  function cleanName(val) {
+    return (val||'').toString().trim().toUpperCase();
+  }
+
+  function cleanCar(val) {
+    if (!val) return '';
+    return val.toString().replace(/\//g, ' ').trim();
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // ESTRATEGIA A: Tabla plana simple (encabezados en fila 1-10)
+  // ─────────────────────────────────────────────────────────────
+  const { row: headerRowIdx, score } = findHeaderRow(rows);
+
+  if (score >= 3 && headerRowIdx >= 0) {
+    const colMap = mapColumns(rows[headerRowIdx]);
+
+    // ── Sub-estrategia A1: Tabla plana normal ──────────────────
+    if (colMap.nombre !== undefined) {
+      const clients = [];
+      for (let i = headerRowIdx + 1; i < rows.length; i++) {
+        const row = rows[i];
+        const nombre = cleanName(row[colMap.nombre]);
+        if (!nombre || nombre.length < 2) continue;
+        // Ignorar filas de totales
+        if (['grand total','total','subtotal'].some(t => nombre.toLowerCase().includes(t))) continue;
+
+        // Teléfono: buscar en varias columnas candidatas
+        let telefono = '';
+        if (colMap.telefono !== undefined) {
+          telefono = cleanPhone(row[colMap.telefono]);
+        }
+        // Si no encontró o es muy corto, buscar en columna alternativa de tel
+        if (!telefono) {
+          // Buscar cualquier celda en la fila que parezca teléfono
+          for (const cell of row) {
+            const t = cleanPhone(cell);
+            if (t.length >= 10) { telefono = t; break; }
+          }
+        }
+
+        const suc = targetSuc ||
+          (colMap.sucursal !== undefined ? (row[colMap.sucursal]||'').toString().trim() : '') ||
+          currentUser.sucursal;
+
+        clients.push({
+          name: nombre,
+          phone: telefono,
+          car: colMap.vehiculo !== undefined ? cleanCar(row[colMap.vehiculo]) : '',
+          plate: colMap.placas !== undefined ? (row[colMap.placas]||'').toString().trim().toUpperCase() : '',
+          balance: colMap.saldo !== undefined ? parseFloat(row[colMap.saldo])||0 : 0,
+          sucursal: suc,
+          code: '',
+        });
+      }
+      if (clients.length > 0) return { clients, mode: 'Tabla plana' };
+    }
+
+    // ── Sub-estrategia A2: Reporte jerárquico (tipo pivot) ─────
+    // Detectado cuando hay columnas de MovID + Nombre + Articulo
+    // y los artículos están en filas adicionales debajo del cliente
+    if (colMap.movid !== undefined && colMap.articulo !== undefined) {
+      return parseHierarchical(rows, headerRowIdx, colMap, targetSuc);
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // ESTRATEGIA B: Sin encabezados — inferir por contenido
+  // Buscar filas que tengan un nombre + teléfono de 10 dígitos
+  // ─────────────────────────────────────────────────────────────
+  const clients = [];
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const nonEmpty = row.filter(c => c !== '' && c !== null && c !== undefined);
+    if (nonEmpty.length < 2) continue;
+
+    // Intentar identificar nombre y teléfono por posición y contenido
+    let nombre = '', telefono = '', car = '', plate = '', balance = 0, suc = '';
+
+    for (const cell of row) {
+      const s = (cell||'').toString().trim();
+      const digits = s.replace(/[^0-9]/g,'');
+      if (digits.length === 10 && !telefono) { telefono = digits; continue; }
+      if (s.match(/^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+ [A-ZÁÉÍÓÚÑ]/)) { nombre = s.toUpperCase(); continue; }
+    }
+
+    if (nombre && nombre.length > 4) {
+      clients.push({ name: nombre, phone: telefono, car, plate, balance, sucursal: targetSuc || currentUser.sucursal, code: '' });
+    }
+  }
+
+  if (clients.length > 0) return { clients, mode: 'Detección automática' };
+  return { clients: [], mode: 'No reconocido' };
+}
+
+/* ── PARSER JERÁRQUICO (Reporte tipo pivot de Grimaldi) ─────── */
+function parseHierarchical(rows, headerRowIdx, colMap, targetSuc) {
+  const clients = {};
+  let currentName = null;
+  let currentMovid = null;
+  let currentDate = '';
+
+  for (let i = headerRowIdx + 1; i < rows.length; i++) {
+    const row = rows[i];
+
+    // Fila de cliente principal: tiene MovID Y Nombre
+    const hasMovid = colMap.movid !== undefined && row[colMap.movid] && row[colMap.movid].toString().trim() !== '';
+    const hasNombre = colMap.nombre !== undefined && row[colMap.nombre] && row[colMap.nombre].toString().trim() !== '';
+
+    if (hasMovid && hasNombre) {
+      const rawName = row[colMap.nombre].toString().trim();
+      // Ignorar filas de totales
+      if (['grand total','total','subtotal'].some(t => rawName.toLowerCase().includes(t))) continue;
+
+      currentName = rawName.toUpperCase();
+      currentMovid = row[colMap.movid].toString().trim();
+      currentDate = colMap.fecha !== undefined ? (row[colMap.fecha]||'').toString().trim() : '';
+
+      if (!clients[currentName]) {
+        // Extraer teléfono — buscar en columnas de tel o en cualquier celda con 10 dígitos
+        let telefono = '';
+        if (colMap.telefono !== undefined) {
+          // A veces hay 2 columnas de tel adyacentes
+          for (let t = colMap.telefono; t <= Math.min(colMap.telefono + 4, row.length - 1); t++) {
+            const val = (row[t]||'').toString().replace(/[^0-9]/g,'');
+            if (val.length >= 10 && val.length <= 12) { telefono = val.slice(-10); break; }
+          }
+        }
+        if (!telefono) {
+          for (const cell of row) {
+            const d = (cell||'').toString().replace(/[^0-9]/g,'');
+            if (d.length === 10) { telefono = d; break; }
+          }
+        }
+
+        const suc = targetSuc ||
+          (colMap.sucursal !== undefined ? (row[colMap.sucursal]||'').toString().trim() : '') ||
+          currentUser.sucursal;
+
+        const modelo = colMap.vehiculo !== undefined ? (row[colMap.vehiculo]||'').toString().replace(/\//g,' ').trim() : '';
+        const placa = colMap.placas !== undefined ? (row[colMap.placas]||'').toString().trim().toUpperCase() : '';
+
+        let saldo = 0;
+        if (colMap.saldo !== undefined) saldo = parseFloat(row[colMap.saldo])||0;
+
+        clients[currentName] = {
+          name: currentName,
+          phone: telefono,
+          car: modelo,
+          plate: placa,
+          balance: saldo,
+          sucursal: suc,
+          code: '',
+          history: [],
+        };
+      }
+
+      // Agregar artículo de esta fila si existe
+      if (colMap.articulo !== undefined && row[colMap.articulo]) {
+        const price = colMap.importe !== undefined ? parseFloat(row[colMap.importe])||0 : 0;
+        clients[currentName].history.push({
+          date: currentDate,
+          movid: currentMovid,
+          sucursal: colMap.sucursal !== undefined ? (row[colMap.sucursal]||'').toString().trim() : '',
+          total: price,
+          items: [{ code: row[colMap.articulo].toString().trim(), desc: colMap.desc !== undefined ? (row[colMap.desc]||'').toString().trim() : '', price }]
+        });
+      }
+
+    } else if (currentName && clients[currentName] && colMap.articulo !== undefined && row[colMap.articulo]) {
+      // Fila de artículo adicional del cliente actual
+      const price = colMap.importe !== undefined ? parseFloat(row[colMap.importe])||0 : 0;
+      const lastVisit = clients[currentName].history[clients[currentName].history.length - 1];
+      if (lastVisit && lastVisit.movid === currentMovid) {
+        lastVisit.items.push({ code: row[colMap.articulo].toString().trim(), desc: colMap.desc !== undefined ? (row[colMap.desc]||'').toString().trim() : '', price });
+        lastVisit.total = (lastVisit.total||0) + price;
+      } else {
+        clients[currentName].history.push({
+          date: currentDate, movid: currentMovid,
+          sucursal: currentUser.sucursal, total: price,
+          items: [{ code: row[colMap.articulo].toString().trim(), desc: colMap.desc !== undefined ? (row[colMap.desc]||'').toString().trim() : '', price }]
+        });
+      }
+    }
+  }
+
+  return { clients: Object.values(clients), mode: 'Reporte jerárquico (con historial)' };
 }
 
 function renderPriceEditor() {
