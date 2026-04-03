@@ -39,7 +39,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);heig
 .sucursal-selector select{width:100%;padding:12px;border-radius:12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:white;font-size:1rem;text-align:center;outline:none}
 .sucursal-selector select option{background:var(--blue-dark);color:white}
 /* APP */
-#app-container{display:none;height:100vh;flex-direction:column}
+#app-container{display:none;height:100vh;height:100dvh;flex-direction:column}
 /* HEADER */
 .header{background:var(--surface);border-bottom:1px solid var(--border);padding:52px 20px 14px;display:flex;justify-content:space-between;align-items:flex-end;flex-shrink:0;position:relative}
 .header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--yellow),var(--yellow-dark))}
@@ -51,7 +51,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);heig
 .role-dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
 .header-clock{font-size:.65rem;color:var(--text-muted);letter-spacing:.5px;text-align:right}
 /* CONTENT */
-.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 0;scrollbar-width:none}
+.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 90px;scrollbar-width:none}
 .content::-webkit-scrollbar{display:none}
 /* VIEWS */
 .view{display:none;padding-bottom:100px}
@@ -174,7 +174,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);heig
 .log-text strong{color:var(--text)}
 .log-time{font-size:.68rem;color:var(--text-muted);flex-shrink:0}
 /* TABS */
-.tab-bar{background:var(--surface);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:8px 0 28px;flex-shrink:0}
+.tab-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:8px 0 28px;z-index:500}
 .tab{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--text-muted);flex:1;cursor:pointer;transition:color .15s;padding:4px 0}
 .tab i{font-size:1.2rem}
 .tab span{font-size:.63rem;font-weight:600;letter-spacing:.3px;text-transform:uppercase}
@@ -1597,9 +1597,9 @@ function renderHistory() {
   el.innerHTML = indexed.map(({ v, i }) => {
     const items = v.items||[];
     const itemsHtml = items.map(it =>
-      `<div style="display:flex;justify-content:space-between;font-size:.75rem;padding:3px 0;border-bottom:1px solid var(--border)">
-        <span style="color:var(--text-muted)">${it.code} — ${it.desc}</span>
-        <span style="color:var(--text);font-weight:600;flex-shrink:0;margin-left:8px">${it.price>0?'$'+it.price.toFixed(2):''}</span>
+      `<div style="display:flex;justify-content:space-between;font-size:.82rem;padding:5px 0;border-bottom:1px solid var(--border)">
+        <span style="color:var(--text);opacity:.9">${it.code} — ${it.desc}</span>
+        <span style="color:var(--yellow);font-weight:700;flex-shrink:0;margin-left:8px">${it.price>0?'$'+it.price.toFixed(2):''}</span>
       </div>`
     ).join('');
     const deleteBtn = isAdmin
