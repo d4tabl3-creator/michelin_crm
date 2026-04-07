@@ -39,7 +39,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);heig
 .sucursal-selector select{width:100%;padding:12px;border-radius:12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:white;font-size:1rem;text-align:center;outline:none}
 .sucursal-selector select option{background:var(--blue-dark);color:white}
 /* APP */
-#app-container{display:none;height:100vh;height:100dvh;flex-direction:column}
+#app-container{display:none;height:100vh;flex-direction:column}
 /* HEADER */
 .header{background:var(--surface);border-bottom:1px solid var(--border);padding:52px 20px 14px;display:flex;justify-content:space-between;align-items:flex-end;flex-shrink:0;position:relative}
 .header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--yellow),var(--yellow-dark))}
@@ -51,7 +51,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);heig
 .role-dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
 .header-clock{font-size:.65rem;color:var(--text-muted);letter-spacing:.5px;text-align:right}
 /* CONTENT */
-.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 90px;scrollbar-width:none}
+.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 0;scrollbar-width:none}
 .content::-webkit-scrollbar{display:none}
 /* VIEWS */
 .view{display:none;padding-bottom:100px}
@@ -174,7 +174,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);heig
 .log-text strong{color:var(--text)}
 .log-time{font-size:.68rem;color:var(--text-muted);flex-shrink:0}
 /* TABS */
-.tab-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:8px 0 28px;z-index:500}
+.tab-bar{background:var(--surface);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:8px 0 28px;flex-shrink:0}
 .tab{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--text-muted);flex:1;cursor:pointer;transition:color .15s;padding:4px 0}
 .tab i{font-size:1.2rem}
 .tab span{font-size:.63rem;font-weight:600;letter-spacing:.3px;text-transform:uppercase}
@@ -659,6 +659,12 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);heig
           <p style="color:var(--text-muted);font-size:.72rem">Sucursal activa se selecciona en el login</p>
         </div>
       </div>
+
+      <div style="text-align:center;padding:18px 0 6px">
+        <span style="font-size:.6rem;color:var(--text-muted);opacity:.5;letter-spacing:.5px;display:block;margin-bottom:4px">Desarrollado por</span>
+        <span style="font-family:'Barlow Condensed',sans-serif;font-style:italic;font-weight:800;font-size:1.1rem;color:var(--yellow);opacity:.6;letter-spacing:1px">Dªtªbl&#x025B;</span>
+      </div>
+
     </div>
 
   </div><!-- /content -->
@@ -878,6 +884,20 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);heig
   </div>
 </div>
 
+<!-- MODAL: PREVIEW DE MENSAJE POR PÍLDORA -->
+<div class="modal-overlay modal-center" id="msg-preview-modal" onclick="if(event.target===this)closeMsgPreviewModal()">
+  <div class="modal" style="max-height:80vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="modal-title" style="margin:0" id="msg-preview-modal-title">Vista previa del mensaje</div>
+      <button onclick="closeMsgPreviewModal()" style="background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;padding:4px">✕</button>
+    </div>
+    <div id="msg-preview-modal-code" style="font-size:.72rem;color:var(--text-muted);margin-bottom:10px;padding:6px 10px;background:var(--surface2);border-radius:8px"></div>
+    <textarea id="msg-preview-modal-text" readonly style="width:100%;min-height:200px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:Barlow,sans-serif;font-size:.88rem;line-height:1.6;resize:none"></textarea>
+    <p style="font-size:.7rem;color:var(--text-muted);margin-top:8px">Este es el mensaje que se enviará a los clientes con este código y plazo. El nombre y vehículo se reemplazan por los datos reales de cada cliente.</p>
+    <button class="btn btn-ghost" onclick="closeMsgPreviewModal()" style="margin-top:10px;width:100%">Cerrar</button>
+  </div>
+</div>
+
 <script>
 /* ============================================================
    BASE DE DATOS Y CATÁLOGO — SE INYECTAN DESDE ARCHIVO ORIGINAL
@@ -914,34 +934,43 @@ const SUCURSALES_KEY = 'michelin_crm_sucursales_v4';
 const UNDO_KEY = 'michelin_crm_undo_v4';
 
 /* ============================================================
-   MAPA COMPLETO DE RECORDATORIOS
-   Tipo: '3m' = 3 meses (aceite), '6m' = 6 meses (llantas/ABR)
+   MAPA COMPLETO DE RECORDATORIOS — soporte dual (3m Y 6m)
+   intervalos: array de { tipo, texto }
+   tipo: '3m' = 3 meses, '6m' = 6 meses
+   texto: 1=ABR/Llantas, 2=Cambio Aceite, 3=Afinación+Aceite,
+          4=Paq.Carretero, 5=Serv.Mayor
    ============================================================ */
 const REMINDER_MAP = {
-  'ZLLM01-K': { tipo: '3m', texto: 2 },  // Cambio aceite 15W40 mineral - 3m - Texto 2
-  'ZLLM02-K': { tipo: '3m', texto: 2 },  // Cambio aceite 5W30 mineral - 3m - Texto 2
-  'ZLLS01-K': { tipo: '6m', texto: 2 },  // Cambio aceite 5W30 sintetico - 6m - Texto 2
-  'ZLA01-K':  { tipo: '6m', texto: 1 },  // Paquete ABR - 6m - Texto 1
-  'ZLA02-K':  { tipo: '6m', texto: 1 },
-  'ZLA03-K':  { tipo: '6m', texto: 1 },
-  'ZLA04-K':  { tipo: '6m', texto: 1 },
-  'ZLA05-K':  { tipo: '6m', texto: 1 },
-  'ZLA06-K':  { tipo: '6m', texto: 1 },
-  'ZLA07-K':  { tipo: '6m', texto: 1 },
-  'ZLA08-K':  { tipo: '6m', texto: 1 },
-  'ZLT23-K':  { tipo: '3m', texto: 2 },  // Paq. Carretero 15W40 mineral - 3m primario - Texto 2
-  'ZLT24-K':  { tipo: '3m', texto: 2 },  // Paq. Carretero 5W30 mineral - 3m primario - Texto 2
-  'ZLT25-K':  { tipo: '6m', texto: 4 },  // Paq. Carretero 5W30 sintetico - 6m - Texto 4
-  'ZLB08-K':  { tipo: '3m', texto: 2 },  // Serv. Mayor Basico 15W40 mineral - 3m primario - Texto 2
-  'ZLB09-K':  { tipo: '3m', texto: 2 },  // Serv. Mayor Basico 5W30 mineral - 3m primario - Texto 2
-  'ZLB10-K':  { tipo: '6m', texto: 3 },  // Serv. Mayor Basico 5W30 sintetico - 6m - Texto 3
-  'ZLB11-K':  { tipo: '3m', texto: 2 },  // Serv. Mayor 15W40 mineral - 3m primario - Texto 2
-  'ZLB12-K':  { tipo: '3m', texto: 2 },  // Serv. Mayor 5W30 mineral - 3m primario - Texto 2
-  'ZLB13-K':  { tipo: '6m', texto: 5 },  // Serv. Mayor 5W30 sintetico - 6m - Texto 5
-  'ZLP05-K':  { tipo: '3m', texto: 2 },  // Performance 15W40 mineral - 3m primario - Texto 2
-  'ZLP06-K':  { tipo: '3m', texto: 2 },  // Performance 5W30 mineral - 3m primario - Texto 2
-  'ZLP07-K':  { tipo: '6m', texto: 2 },  // Performance 5W30 sintetico - 6m - Texto 2
+  // ── ACEITE SOLO (un único intervalo) ──────────────────────
+  'ZLLM01-K': { desc: 'Aceite 15W40 Mineral',         intervalos: [{ tipo:'3m', texto:2 }] },
+  'ZLLM02-K': { desc: 'Aceite 5W30 Mineral',           intervalos: [{ tipo:'3m', texto:2 }] },
+  'ZLLS01-K': { desc: 'Aceite 5W30 Sintético',         intervalos: [{ tipo:'6m', texto:2 }] },
+  // ── ABR / LLANTAS ─────────────────────────────────────────
+  'ZLA01-K':  { desc: 'Paquete ABR Rin 13-16',         intervalos: [{ tipo:'6m', texto:1 }] },
+  // ── PAQUETE CARRETERO ─────────────────────────────────────
+  'ZLT23-K':  { desc: 'Paq. Carretero 15W40 Mineral',  intervalos: [{ tipo:'3m', texto:2 }, { tipo:'6m', texto:4 }] },
+  'ZLT24-K':  { desc: 'Paq. Carretero 5W30 Mineral',   intervalos: [{ tipo:'3m', texto:2 }, { tipo:'6m', texto:4 }] },
+  'ZLT25-K':  { desc: 'Paq. Carretero 5W30 Sintético', intervalos: [{ tipo:'6m', texto:4 }] },
+  // ── SERVICIO MAYOR BÁSICO ─────────────────────────────────
+  'ZLB08-K':  { desc: 'Serv. Mayor Básico 15W40 Min.', intervalos: [{ tipo:'3m', texto:2 }, { tipo:'6m', texto:3 }] },
+  'ZLB09-K':  { desc: 'Serv. Mayor Básico 5W30 Min.',  intervalos: [{ tipo:'3m', texto:2 }, { tipo:'6m', texto:3 }] },
+  'ZLB10-K':  { desc: 'Serv. Mayor Básico 5W30 Sint.', intervalos: [{ tipo:'6m', texto:3 }] },
+  // ── SERVICIO MAYOR ────────────────────────────────────────
+  'ZLB11-K':  { desc: 'Serv. Mayor 15W40 Mineral',     intervalos: [{ tipo:'3m', texto:2 }, { tipo:'6m', texto:5 }] },
+  'ZLB12-K':  { desc: 'Serv. Mayor 5W30 Mineral',      intervalos: [{ tipo:'3m', texto:2 }, { tipo:'6m', texto:5 }] },
+  'ZLB13-K':  { desc: 'Serv. Mayor 5W30 Sintético',    intervalos: [{ tipo:'6m', texto:5 }] },
+  // ── PERFORMANCE ───────────────────────────────────────────
+  'ZLP05-K':  { desc: 'Performance 15W40 Mineral',     intervalos: [{ tipo:'3m', texto:2 }, { tipo:'6m', texto:5 }] },
+  'ZLP06-K':  { desc: 'Performance 5W30 Mineral',      intervalos: [{ tipo:'3m', texto:2 }, { tipo:'6m', texto:5 }] },
+  'ZLP07-K':  { desc: 'Performance 5W30 Sintético',    intervalos: [{ tipo:'6m', texto:2 }] },
 };
+
+// Helper: para código dado, devuelve el primer intervalo (retrocompatibilidad)
+function getReminderPrimary(code) {
+  const e = REMINDER_MAP[code];
+  if (!e) return null;
+  return e.intervalos[0];
+}
 
 /* ============================================================
    TEXTOS EXACTOS DE MENSAJES WHATSAPP
@@ -980,7 +1009,8 @@ function getTextoFromHistory(client) {
   for (const visit of sorted) {
     for (const item of (visit.items || [])) {
       const code = (item.code || '').toUpperCase().trim();
-      if (REMINDER_MAP[code]) return REMINDER_MAP[code].texto;
+      const entry = REMINDER_MAP[code];
+      if (entry) return entry.intervalos[0].texto;
     }
   }
   return 0;
@@ -1275,23 +1305,44 @@ function renderFilterPills() {
 }
 function setFilter(v) { activeFilter = v; activeReminderFilter = ''; renderFilterPills(); renderReminderPills(); renderList(); }
 
-// Píldoras de recordatorio — 7 tipos
-const REMINDER_PILLS = [
-  { label: '🛢️ 3m · Aceite (ZLLM01-K)', value: 'ZLLM01-K', class: 'pill-3m' },
-  { label: '🛢️ 3m · Aceite (ZLLM02-K)', value: 'ZLLM02-K', class: 'pill-3m' },
-  { label: '🔧 6m · ABR/Llantas (ZLLS01-K)', value: 'ZLLS01-K', class: 'pill-6m' },
-  { label: '🔧 6m · ABR/Llantas (ZLA01-K)', value: 'ZLA01-K', class: 'pill-6m' },
-  { label: '⚙️ Afinación+Aceite', value: '__texto3__', class: '' },
-  { label: '🚗 Paq. Carretero', value: '__texto4__', class: '' },
-  { label: '⭐ Serv. Mayor', value: '__texto5__', class: '' },
-];
+// Píldoras de recordatorio — una por cada código+intervalo
+// value format: 'CODIGO__3m' o 'CODIGO__6m'
+// Naranja = 3 meses | Verde = 6 meses | Azul = 6m ABR
+function buildReminderPills() {
+  const pills = [];
+  const TEXTO_LABELS = { 1:'🔧 ABR/Llantas', 2:'🛢️ Cambio Aceite', 3:'⚙️ Afinación+Aceite', 4:'🚗 Paq. Carretero', 5:'⭐ Serv. Mayor' };
+  for (const [code, entry] of Object.entries(REMINDER_MAP)) {
+    for (const iv of entry.intervalos) {
+      pills.push({
+        code,
+        tipo: iv.tipo,
+        texto: iv.texto,
+        value: `${code}__${iv.tipo}`,
+        label: `${code} · ${iv.tipo} · ${TEXTO_LABELS[iv.texto]||'Texto '+iv.texto}`,
+        cssClass: iv.tipo === '3m' ? 'pill-3m' : 'pill-6m'
+      });
+    }
+  }
+  return pills;
+}
 function renderReminderPills() {
   const row = document.getElementById('reminder-pills-row');
   const container = document.getElementById('reminder-pills');
   row.style.display = 'block';
-  container.innerHTML = REMINDER_PILLS.map(p =>
-    `<div class="filter-pill ${p.class}${activeReminderFilter === p.value ? ' active' : ''}" onclick="setReminderFilter('${p.value}')">
-       ${p.label}
+  const pills = buildReminderPills();
+  container.innerHTML = pills.map(p =>
+    `<div style="display:inline-flex;align-items:stretch;gap:0;margin:3px 4px 3px 0;flex-shrink:0;vertical-align:middle">
+       <div class="filter-pill ${p.cssClass}${activeReminderFilter === p.value ? ' active' : ''}"
+            onclick="setReminderFilter('${p.value}')"
+            style="border-radius:20px 0 0 20px;margin:0;padding-right:6px;align-items:center"
+            title="${REMINDER_MAP[p.code].desc}">
+         ${p.label}
+       </div>
+       <button onclick="showMsgPreview('${p.code}','${p.tipo}')"
+               title="Ver mensaje"
+               style="padding:0 8px;border-radius:0 20px 20px 0;border:1px solid var(--border);border-left:none;background:var(--surface2);color:var(--text-muted);cursor:pointer;font-size:.8rem">
+         👁️
+       </button>
      </div>`
   ).join('');
 }
@@ -1301,33 +1352,48 @@ function setReminderFilter(v) {
   renderList();
 }
 
+function showMsgPreview(code, tipo) {
+  const entry = REMINDER_MAP[code];
+  if (!entry) return;
+  const iv = entry.intervalos.find(i => i.tipo === tipo) || entry.intervalos[0];
+  const TEXTO_NAMES = {
+    1:'Texto 1 — ABR / Mantenimiento de Llantas',
+    2:'Texto 2 — Cambio de Aceite',
+    3:'Texto 3 — Afinación y Cambio de Aceite',
+    4:'Texto 4 — Paquete Carretero',
+    5:'Texto 5 — Servicio Mayor'
+  };
+  const msg = buildMsgTexto(iv.texto, '[NOMBRE CLIENTE]', '[MARCA MODELO AÑO]', 0);
+  document.getElementById('msg-preview-modal-title').textContent = `${code} · ${tipo} — ${entry.desc}`;
+  document.getElementById('msg-preview-modal-code').textContent =
+    `${TEXTO_NAMES[iv.texto] || 'Texto '+iv.texto}  ·  Recordatorio a los ${tipo === '3m' ? '3 meses' : '6 meses'}`;
+  document.getElementById('msg-preview-modal-text').value = msg;
+  document.getElementById('msg-preview-modal').classList.add('show');
+}
+function closeMsgPreviewModal() {
+  document.getElementById('msg-preview-modal').classList.remove('show');
+}
+
 /* ============================================================
    LISTA DE CLIENTES CON FILTRO DE RECORDATORIO
    ============================================================ */
 function clientMatchesReminderFilter(c) {
   if (!activeReminderFilter) return true;
   if (!c.history || !c.history.length) return false;
+
+  // Parsear value: 'CODIGO__3m' o 'CODIGO__6m'
+  const parts = activeReminderFilter.split('__');
+  if (parts.length !== 2) return false;
+  const targetCode = parts[0];
+  const targetTipo = parts[1]; // '3m' o '6m'
+  const meses = targetTipo === '3m' ? 3 : 6;
+
   const now = new Date();
-  // Para texto3, 4, 5 filtramos por texto en REMINDER_MAP
-  const textoTarget = { '__texto3__': 3, '__texto4__': 4, '__texto5__': 5 };
-  if (textoTarget[activeReminderFilter]) {
-    const t = textoTarget[activeReminderFilter];
-    for (const v of c.history) {
-      for (const it of (v.items||[])) {
-        const code = (it.code||'').toUpperCase().trim();
-        if (REMINDER_MAP[code] && REMINDER_MAP[code].texto === t) return true;
-      }
-    }
-    return false;
-  }
-  // Filtro por código específico con tiempo vencido
-  const targetCode = activeReminderFilter;
-  const meses = REMINDER_MAP[targetCode]?.tipo === '3m' ? 3 : 6;
   for (const v of c.history) {
     if (!v.date) continue;
-    const parts = v.date.split('/');
-    if (parts.length !== 3) continue;
-    const svcDate = new Date(parts[2], parts[1]-1, parts[0]);
+    const p = v.date.split('/');
+    if (p.length !== 3) continue;
+    const svcDate = new Date(p[2], p[1]-1, p[0]);
     const diff = (now.getFullYear()-svcDate.getFullYear())*12+(now.getMonth()-svcDate.getMonth());
     if (diff >= meses) {
       for (const it of (v.items||[])) {
@@ -1466,15 +1532,19 @@ function previewMsg() {
   const bal = parseFloat(document.getElementById('a-balance').value||0);
   const box = document.getElementById('msg-preview');
   let num = 0;
-  if (activeReminderFilter && REMINDER_MAP[activeReminderFilter]) {
-    num = REMINDER_MAP[activeReminderFilter].texto;
-  } else if (activeReminderFilter === '__texto3__') { num = 3;
-  } else if (activeReminderFilter === '__texto4__') { num = 4;
-  } else if (activeReminderFilter === '__texto5__') { num = 5;
+  // activeReminderFilter puede ser 'CODIGO__3m' o 'CODIGO__6m' (nuevo formato)
+  if (activeReminderFilter && activeReminderFilter.includes('__')) {
+    const [code, tipo] = activeReminderFilter.split('__');
+    const entry = REMINDER_MAP[code];
+    if (entry) {
+      const iv = entry.intervalos.find(i => i.tipo === tipo) || entry.intervalos[0];
+      num = iv.texto;
+    }
   } else {
     const assignedCode = (client.code || '').toUpperCase().trim();
-    if (assignedCode && REMINDER_MAP[assignedCode]) {
-      num = REMINDER_MAP[assignedCode].texto;
+    const entry = assignedCode ? REMINDER_MAP[assignedCode] : null;
+    if (entry) {
+      num = entry.intervalos[0].texto;
     } else {
       num = getTextoFromHistory(client);
     }
@@ -1710,20 +1780,23 @@ function renderAlerts() {
       if (!serv.items) return;
       serv.items.forEach(item => {
         const code = (item.code||'').toUpperCase().trim();
-        if (!REMINDER_MAP[code]) return;
-        const { tipo, texto } = REMINDER_MAP[code];
-        const mesesReq = tipo === '3m' ? 3 : 6;
-        if (monthsDiff >= mesesReq) {
-          results.push({ client, idx: db.indexOf(client), tipo, texto, monthsDiff, fecha: serv.date, code });
-        }
+        const entry = REMINDER_MAP[code];
+        if (!entry) return;
+        // Iterar TODOS los intervalos del código
+        entry.intervalos.forEach(iv => {
+          const mesesReq = iv.tipo === '3m' ? 3 : 6;
+          if (monthsDiff >= mesesReq) {
+            results.push({ client, idx: db.indexOf(client), tipo: iv.tipo, texto: iv.texto, monthsDiff, fecha: serv.date, code });
+          }
+        });
       });
     });
   });
 
-  // Deduplicar por cliente
+  // Deduplicar por cliente + código + intervalo
   const seen = new Set();
   const unique = results.filter(r => {
-    const key = `${r.idx}-${r.code}`;
+    const key = `${r.idx}-${r.code}-${r.tipo}`;
     if (seen.has(key)) return false;
     seen.add(key); return true;
   });
