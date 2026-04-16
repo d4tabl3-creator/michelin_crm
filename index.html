@@ -1464,18 +1464,23 @@ function renderList() {
     const realIdx = db.indexOf(c);
     const ini = c.name.split(' ').slice(0,2).map(w => w[0]||'?').join('').toUpperCase();
     const bal = parseFloat(c.balance)||0;
-    return `<div class="client-item" onclick="selectClient(${realIdx})">
+    const hasPhone = !!(c.phone||'').replace(/\D/g,'');
+    const waBtn = hasPhone
+      ? `<button onclick="quickSendWA(${realIdx}, event)" title="Enviar WhatsApp" style="background:var(--green-wa);border:none;border-radius:8px;padding:6px 8px;color:white;cursor:pointer;flex-shrink:0;font-size:.85rem"><i class="fa-brands fa-whatsapp"></i></button>`
+      : '';
+    return `<div class="client-item" onclick="selectClient(${realIdx})" style="gap:8px">
       <div class="client-avatar">${ini}</div>
       <div class="client-info">
         <div class="c-name">${c.name}</div>
         <div class="c-detail">${c.car||'Sin vehículo'}${c.plate ? ' · '+c.plate : ''}</div>
       </div>
-      <div class="client-right">
+      <div class="client-right" style="align-items:flex-end;gap:4px">
         <div class="bal-badge${bal<=0?' zero':''}">
           ${bal>0 ? '$'+bal.toFixed(2) : '—'}
         </div>
         <div class="suc-tag">${c.sucursal||''}</div>
       </div>
+      ${waBtn}
     </div>`;
   }).join('');
 }
@@ -1568,6 +1573,38 @@ function sendWA() {
   logActivity('wa', document.getElementById('a-name').value, 'Recordatorio enviado');
   const url = `https://wa.me/52${phone}?text=${encodeURIComponent(txt)}`;
   window.open(url, '_blank');
+  toast('✅ Abriendo WhatsApp...');
+}
+
+// Envío rápido de WhatsApp directo desde lista o búsqueda flotante
+function quickSendWA(idx, event) {
+  if (event) { event.stopPropagation(); }
+  const c = db[idx];
+  if (!c) return;
+  const phone = (c.phone||'').replace(/\D/g,'');
+  if (!phone) { toast('⚠️ ' + c.name + ' no tiene teléfono registrado'); return; }
+  // Determinar texto: código asignado > historial > mensaje genérico
+  let msg = '';
+  const code = (c.code||'').toUpperCase().trim();
+  let textoNum = 0;
+  if (code && REMINDER_MAP[code]) {
+    textoNum = REMINDER_MAP[code].intervalos[0].texto;
+  } else {
+    textoNum = getTextoFromHistory(c);
+  }
+  if (textoNum > 0) {
+    msg = buildMsgTexto(textoNum, c.name, c.car, parseFloat(c.balance)||0);
+  } else {
+    // Mensaje genérico editable
+    const nombre = c.name.split(' ')[0].charAt(0).toUpperCase() + c.name.split(' ')[0].slice(1).toLowerCase();
+    const carStr = c.car ? c.car.toUpperCase() : 'su vehículo';
+    const bal = parseFloat(c.balance)||0;
+    const balLine = bal > 0 ? `\n\n💰 Le informo también, que cuenta con un saldo de $${bal.toFixed(2)} disponible en su monedero electrónico.` : '';
+    msg = `👋 Hola estimad@ ${nombre}\n\nLe contactamos de Michelin Car Service para recordarle que tiene un servicio pendiente para ${carStr}.${balLine}\n\n🗓️ ¿Le gustaría que agendemos su cita?`;
+  }
+  waCount++; saveWACount();
+  logActivity('wa', c.name, 'Mensaje rápido');
+  window.open(`https://wa.me/52${phone}?text=${encodeURIComponent(msg)}`, '_blank');
   toast('✅ Abriendo WhatsApp...');
 }
 
@@ -2621,16 +2658,21 @@ function renderFloatResults() {
     const bal = parseFloat(c.balance)||0;
     const ini = c.name.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
     const ab = matchedArticle ? `<div style="font-size:.68rem;color:var(--yellow);margin-top:2px">🔧 ${matchedArticle.code} — ${(matchedArticle.desc||'').slice(0,30)}</div>` : '';
-    return `<div class="float-result-item" onclick="floatSelectClient(${i})">
-      <div style="display:flex;align-items:center;gap:10px;flex:1">
+    const hasPhone = !!(c.phone||'').replace(/\D/g,'');
+    const waBtn = hasPhone
+      ? `<button onclick="quickSendWA(${i}, event)" title="Enviar WhatsApp" style="background:var(--green-wa);border:none;border-radius:8px;padding:8px 10px;color:white;cursor:pointer;flex-shrink:0;font-size:.9rem"><i class="fa-brands fa-whatsapp"></i></button>`
+      : '';
+    return `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border)">
+      <div class="float-result-item" onclick="floatSelectClient(${i})" style="flex:1;display:flex;align-items:center;gap:10px;padding:0;border:none">
         <div style="width:36px;height:36px;border-radius:10px;background:var(--blue-dark);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;flex-shrink:0">${ini}</div>
         <div style="flex:1;min-width:0">
           <div style="font-weight:600;font-size:.85rem">${c.name}</div>
           <div style="font-size:.72rem;color:var(--text-muted)">${c.car||''} ${c.sucursal?'· '+c.sucursal:''}</div>
           ${ab}
         </div>
+        ${bal>0?`<div style="color:var(--yellow);font-weight:700;font-size:.8rem;flex-shrink:0;margin-left:8px">$${bal.toFixed(0)}</div>`:''}
       </div>
-      ${bal>0?`<div style="color:var(--yellow);font-weight:700;font-size:.8rem;flex-shrink:0;margin-left:8px">$${bal.toFixed(0)}</div>`:''}
+      ${waBtn}
     </div>`;
   }).join('');
 }
