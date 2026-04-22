@@ -915,13 +915,19 @@ const UNDO_KEY = 'michelin_crm_undo_v4';
 
 /* ============================================================
    MAPA COMPLETO DE RECORDATORIOS
-   Tipo: '3m' = 3 meses (aceite), '6m' = 6 meses (llantas/ABR)
+   Fuente: Codigos_con_intervalos_de_recordatorio.xlsx (fuente autoritativa)
+   tipo/texto = 1er recordatorio | tipo2/texto2 = 2do recordatorio (solo en codigos dobles)
    ============================================================ */
 const REMINDER_MAP = {
-  'ZLLM01-K': { tipo: '3m', texto: 2 },  // Cambio aceite 15W40 mineral - 3m - Texto 2
-  'ZLLM02-K': { tipo: '3m', texto: 2 },  // Cambio aceite 5W30 mineral - 3m - Texto 2
-  'ZLLS01-K': { tipo: '6m', texto: 2 },  // Cambio aceite 5W30 sintetico - 6m - Texto 2
-  'ZLA01-K':  { tipo: '6m', texto: 1 },  // Paquete ABR - 6m - Texto 1
+  // ── 1 solo recordatorio ─────────────────────────────────────────
+  'ZLLM01-K': { tipo: '3m', texto: 2 },                           // Aceite 15W40 mineral
+  'ZLLM02-K': { tipo: '3m', texto: 2 },                           // Aceite 5W30 mineral
+  'ZLLS01-K': { tipo: '6m', texto: 2 },                           // Aceite 5W30 sintetico
+  'ZLP07-K':  { tipo: '6m', texto: 2 },                           // Performance 5W30 sintetico
+  'ZLT25-K':  { tipo: '6m', texto: 4 },                           // Carretero 5W30 sintetico
+  'ZLB10-K':  { tipo: '6m', texto: 3 },                           // Mayor Basico 5W30 sintetico
+  'ZLB13-K':  { tipo: '6m', texto: 5 },                           // Mayor 5W30 sintetico
+  'ZLA01-K':  { tipo: '6m', texto: 1 },                           // Paquete ABR rin 13-16
   'ZLA02-K':  { tipo: '6m', texto: 1 },
   'ZLA03-K':  { tipo: '6m', texto: 1 },
   'ZLA04-K':  { tipo: '6m', texto: 1 },
@@ -929,18 +935,15 @@ const REMINDER_MAP = {
   'ZLA06-K':  { tipo: '6m', texto: 1 },
   'ZLA07-K':  { tipo: '6m', texto: 1 },
   'ZLA08-K':  { tipo: '6m', texto: 1 },
-  'ZLT23-K':  { tipo: '3m', texto: 2 },  // Paq. Carretero 15W40 mineral - 3m primario - Texto 2
-  'ZLT24-K':  { tipo: '3m', texto: 2 },  // Paq. Carretero 5W30 mineral - 3m primario - Texto 2
-  'ZLT25-K':  { tipo: '6m', texto: 4 },  // Paq. Carretero 5W30 sintetico - 6m - Texto 4
-  'ZLB08-K':  { tipo: '3m', texto: 2 },  // Serv. Mayor Basico 15W40 mineral - 3m primario - Texto 2
-  'ZLB09-K':  { tipo: '3m', texto: 2 },  // Serv. Mayor Basico 5W30 mineral - 3m primario - Texto 2
-  'ZLB10-K':  { tipo: '6m', texto: 3 },  // Serv. Mayor Basico 5W30 sintetico - 6m - Texto 3
-  'ZLB11-K':  { tipo: '3m', texto: 2 },  // Serv. Mayor 15W40 mineral - 3m primario - Texto 2
-  'ZLB12-K':  { tipo: '3m', texto: 2 },  // Serv. Mayor 5W30 mineral - 3m primario - Texto 2
-  'ZLB13-K':  { tipo: '6m', texto: 5 },  // Serv. Mayor 5W30 sintetico - 6m - Texto 5
-  'ZLP05-K':  { tipo: '3m', texto: 2 },  // Performance 15W40 mineral - 3m primario - Texto 2
-  'ZLP06-K':  { tipo: '3m', texto: 2 },  // Performance 5W30 mineral - 3m primario - Texto 2
-  'ZLP07-K':  { tipo: '6m', texto: 2 },  // Performance 5W30 sintetico - 6m - Texto 2
+  // ── 2 recordatorios: 3m → Texto 2 (aceite), luego 6m → Texto X ─
+  'ZLT23-K':  { tipo: '3m', texto: 2, tipo2: '6m', texto2: 4 },  // Carretero 15W40 mineral
+  'ZLT24-K':  { tipo: '3m', texto: 2, tipo2: '6m', texto2: 4 },  // Carretero 5W30 mineral
+  'ZLB08-K':  { tipo: '3m', texto: 2, tipo2: '6m', texto2: 3 },  // Mayor Basico 15W40 mineral
+  'ZLB09-K':  { tipo: '3m', texto: 2, tipo2: '6m', texto2: 3 },  // Mayor Basico 5W30 mineral
+  'ZLB11-K':  { tipo: '3m', texto: 2, tipo2: '6m', texto2: 5 },  // Mayor 15W40 mineral
+  'ZLB12-K':  { tipo: '3m', texto: 2, tipo2: '6m', texto2: 5 },  // Mayor 5W30 mineral
+  'ZLP05-K':  { tipo: '3m', texto: 2, tipo2: '6m', texto2: 5 },  // Performance 15W40 mineral
+  'ZLP06-K':  { tipo: '3m', texto: 2, tipo2: '6m', texto2: 5 },  // Performance 5W30 mineral
 };
 
 /* ============================================================
@@ -970,6 +973,17 @@ function buildMsgTexto(textoNum, name, car, bal) {
   }
 }
 
+// Calcula meses transcurridos desde una fecha "DD/MM/YYYY"
+function monthsSince(dateStr) {
+  if (!dateStr) return -1;
+  const p = dateStr.split('/');
+  if (p.length !== 3) return -1;
+  const d = new Date(parseInt(p[2]), parseInt(p[1])-1, parseInt(p[0]));
+  const now = new Date();
+  return (now.getFullYear()-d.getFullYear())*12 + (now.getMonth()-d.getMonth());
+}
+
+// Devuelve el numero de texto que corresponde HOY segun el historial del cliente
 function getTextoFromHistory(client) {
   if (!client || !client.history || !client.history.length) return 0;
   const sorted = [...client.history].sort((a, b) => {
@@ -978,9 +992,20 @@ function getTextoFromHistory(client) {
     return db2.localeCompare(da);
   });
   for (const visit of sorted) {
+    const months = monthsSince(visit.date);
+    if (months < 0) continue;
     for (const item of (visit.items || [])) {
       const code = (item.code || '').toUpperCase().trim();
-      if (REMINDER_MAP[code]) return REMINDER_MAP[code].texto;
+      const r = REMINDER_MAP[code];
+      if (!r) continue;
+      const m1 = r.tipo === '3m' ? 3 : 6;
+      if (r.tipo2) {
+        const m2 = r.tipo2 === '3m' ? 3 : 6;
+        if (months >= m2) return r.texto2;   // 2do recordatorio
+        if (months >= m1) return r.texto;     // 1er recordatorio
+      } else {
+        if (months >= m1) return r.texto;
+      }
     }
   }
   return 0;
@@ -1277,13 +1302,11 @@ function setFilter(v) { activeFilter = v; activeReminderFilter = ''; renderFilte
 
 // Píldoras de recordatorio — 7 tipos
 const REMINDER_PILLS = [
-  { label: '🛢️ 3m · Aceite (ZLLM01-K)', value: 'ZLLM01-K', class: 'pill-3m' },
-  { label: '🛢️ 3m · Aceite (ZLLM02-K)', value: 'ZLLM02-K', class: 'pill-3m' },
-  { label: '🔧 6m · ABR/Llantas (ZLLS01-K)', value: 'ZLLS01-K', class: 'pill-6m' },
-  { label: '🔧 6m · ABR/Llantas (ZLA01-K)', value: 'ZLA01-K', class: 'pill-6m' },
-  { label: '⚙️ Afinación+Aceite', value: '__texto3__', class: '' },
-  { label: '🚗 Paq. Carretero', value: '__texto4__', class: '' },
-  { label: '⭐ Serv. Mayor', value: '__texto5__', class: '' },
+  { label: 'T1 · ABR',       value: '__texto1__', class: 'pill-6m' },
+  { label: 'T2 · Aceite',    value: '__texto2__', class: 'pill-3m' },
+  { label: 'T3 · Afinac.',   value: '__texto3__', class: '' },
+  { label: 'T4 · Carretero', value: '__texto4__', class: '' },
+  { label: 'T5 · Mayor',     value: '__texto5__', class: '' },
 ];
 function renderReminderPills() {
   const row = document.getElementById('reminder-pills-row');
@@ -1307,31 +1330,26 @@ function setReminderFilter(v) {
 function clientMatchesReminderFilter(c) {
   if (!activeReminderFilter) return true;
   if (!c.history || !c.history.length) return false;
-  const now = new Date();
-  // Para texto3, 4, 5 filtramos por texto en REMINDER_MAP
-  const textoTarget = { '__texto3__': 3, '__texto4__': 4, '__texto5__': 5 };
-  if (textoTarget[activeReminderFilter]) {
-    const t = textoTarget[activeReminderFilter];
-    for (const v of c.history) {
-      for (const it of (v.items||[])) {
-        const code = (it.code||'').toUpperCase().trim();
-        if (REMINDER_MAP[code] && REMINDER_MAP[code].texto === t) return true;
-      }
-    }
-    return false;
-  }
-  // Filtro por código específico con tiempo vencido
-  const targetCode = activeReminderFilter;
-  const meses = REMINDER_MAP[targetCode]?.tipo === '3m' ? 3 : 6;
+  const textoTarget = { '__texto1__':1, '__texto2__':2, '__texto3__':3, '__texto4__':4, '__texto5__':5 };
+  if (textoTarget[activeReminderFilter] === undefined) return false;
+  const t = textoTarget[activeReminderFilter];
   for (const v of c.history) {
-    if (!v.date) continue;
-    const parts = v.date.split('/');
-    if (parts.length !== 3) continue;
-    const svcDate = new Date(parts[2], parts[1]-1, parts[0]);
-    const diff = (now.getFullYear()-svcDate.getFullYear())*12+(now.getMonth()-svcDate.getMonth());
-    if (diff >= meses) {
-      for (const it of (v.items||[])) {
-        if ((it.code||'').toUpperCase().trim() === targetCode) return true;
+    const months = monthsSince(v.date);
+    if (months < 0) continue;
+    for (const it of (v.items||[])) {
+      const code = (it.code||'').toUpperCase().trim();
+      const r = REMINDER_MAP[code];
+      if (!r) continue;
+      const m1 = r.tipo === '3m' ? 3 : 6;
+      if (r.tipo2) {
+        const m2 = r.tipo2 === '3m' ? 3 : 6;
+        // 2do recordatorio: >= m2 meses
+        if (months >= m2 && r.texto2 === t) return true;
+        // 1er recordatorio: entre m1 y m2 meses (aun no ha escalado)
+        if (months >= m1 && months < m2 && r.texto === t) return true;
+      } else {
+        // Solo 1 recordatorio
+        if (months >= m1 && r.texto === t) return true;
       }
     }
   }
@@ -1381,8 +1399,8 @@ function renderList() {
       }
     }
 
-    // Recordatorio
-    const remMatch = clientMatchesReminderFilter(c);
+    // Recordatorio (se omite si hay busqueda de texto activa)
+    const remMatch = term ? true : clientMatchesReminderFilter(c);
 
     return textMatch && tagMatch && dateMatch && remMatch;
   });
@@ -1466,15 +1484,15 @@ function previewMsg() {
   const bal = parseFloat(document.getElementById('a-balance').value||0);
   const box = document.getElementById('msg-preview');
   let num = 0;
-  if (activeReminderFilter && REMINDER_MAP[activeReminderFilter]) {
-    num = REMINDER_MAP[activeReminderFilter].texto;
-  } else if (activeReminderFilter === '__texto3__') { num = 3;
-  } else if (activeReminderFilter === '__texto4__') { num = 4;
-  } else if (activeReminderFilter === '__texto5__') { num = 5;
+  const _tt = { '__texto1__':1, '__texto2__':2, '__texto3__':3, '__texto4__':4, '__texto5__':5 };
+  if (activeReminderFilter && _tt[activeReminderFilter] !== undefined) {
+    num = _tt[activeReminderFilter];
   } else {
     const assignedCode = (client.code || '').toUpperCase().trim();
     if (assignedCode && REMINDER_MAP[assignedCode]) {
-      num = REMINDER_MAP[assignedCode].texto;
+      // Usar logica de tiempo si hay historial
+      const fromHistory = getTextoFromHistory(client);
+      num = fromHistory || REMINDER_MAP[assignedCode].texto;
     } else {
       num = getTextoFromHistory(client);
     }
